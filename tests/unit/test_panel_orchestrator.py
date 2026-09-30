@@ -6,10 +6,16 @@ import unittest
 from pathlib import Path
 
 from aivp.artifacts.registry import ArtifactRegistry
+from aivp.errors import InjectedCrash
 from aivp.execution.runtime import Budgets, Runtime
 from aivp.models.base import ModelRequest, ModelResult
 from aivp.panel.orchestrator import execute_panel
 from aivp.risk.engine import LegacyCompatibleRiskEngine
+from aivp.state.durable import (
+    DurableExecution,
+    counters_from_checkpoint,
+)
+from aivp.state.sqlite import SQLiteStateStore
 
 
 REVIEW_LOW = json.dumps(
@@ -67,6 +73,25 @@ class FakeModel:
             finished_at="end",
             raw_exit_status=0,
             last_message=value,
+        )
+
+
+class EditingFakeModel(FakeModel):
+    def invoke(
+        self,
+        request: ModelRequest,
+    ) -> ModelResult:
+        if request.role == "generator":
+            (
+                request.repo
+                / "generated.txt"
+            ).write_text(
+                "generated\n",
+                encoding="utf-8",
+            )
+
+        return super().invoke(
+            request
         )
 
 
@@ -408,6 +433,214 @@ class HarnessPanelTests(
                     / "human-review.md"
                 ).exists()
             )
+
+
+    def test_resume_after_generation_does_not_regenerate(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            state_db = root / "state.db"
+
+            first_runtime = Runtime(
+                run_dir,
+                Budgets(),
+            )
+
+            first_store = (
+                SQLiteStateStore(
+                    state_db
+                )
+            )
+
+            generator = EditingFakeModel(
+                first_runtime,
+                "codex",
+                ["generated"],
+            )
+
+            try:
+                with self.assertRaises(
+                    InjectedCrash
+                ):
+                    execute_panel(
+                        runtime=first_runtime,
+                        repo=repo,
+                        task=self.task(),
+                        config=self.config(),
+                        generator=generator,
+                        reviewer=FakeModel(
+                            first_runtime,
+                            "claude",
+                            [REVIEW_LOW],
+                        ),
+                        risk_judge=FakeModel(
+                            first_runtime,
+                            "codex",
+                            [RISK_LOW],
+                        ),
+                        verifier=FakeVerifier(
+                            [passed()]
+                        ),
+                        risk_engine=(
+                            LegacyCompatibleRiskEngine()
+                        ),
+                        artifacts=(
+                            ArtifactRegistry()
+                        ),
+                        durable=DurableExecution(
+                            store=first_store,
+                            run_id="run-1",
+                            fault_after_state=(
+                                "GENERATED"
+                            ),
+                        ),
+                    )
+
+                checkpoint = (
+                    first_store.load(
+                        "run-1"
+                    )
+                )
+
+                self.assertIsNotNone(
+                    checkpoint
+                )
+
+                self.assertEqual(
+                    checkpoint["state"],
+                    "GENERATED",
+                )
+
+                self.assertEqual(
+                    len(
+                        generator.requests
+                    ),
+                    1,
+                )
+
+                self.assertEqual(
+                    first_runtime
+                    .counters
+                    .codex_calls,
+                    1,
+                )
+
+            finally:
+                first_store.close()
+
+            second_store = (
+                SQLiteStateStore(
+                    state_db
+                )
+            )
+
+            try:
+                assert checkpoint is not None
+
+                second_runtime = Runtime(
+                    run_dir,
+                    Budgets(),
+                    resume=True,
+                    counters=(
+                        counters_from_checkpoint(
+                            checkpoint
+                        )
+                    ),
+                )
+
+                resumed_generator = (
+                    FakeModel(
+                        second_runtime,
+                        "codex",
+                        [],
+                    )
+                )
+
+                verifier = FakeVerifier(
+                    [passed()]
+                )
+
+                result_dir = execute_panel(
+                    runtime=second_runtime,
+                    repo=repo,
+                    task=self.task(),
+                    config=self.config(),
+                    generator=(
+                        resumed_generator
+                    ),
+                    reviewer=FakeModel(
+                        second_runtime,
+                        "claude",
+                        [REVIEW_LOW],
+                    ),
+                    risk_judge=FakeModel(
+                        second_runtime,
+                        "codex",
+                        [RISK_LOW],
+                    ),
+                    verifier=verifier,
+                    risk_engine=(
+                        LegacyCompatibleRiskEngine()
+                    ),
+                    artifacts=(
+                        ArtifactRegistry()
+                    ),
+                    durable=DurableExecution(
+                        store=second_store,
+                        run_id="run-1",
+                        attempt=2,
+                        resume_checkpoint=(
+                            checkpoint
+                        ),
+                    ),
+                )
+
+                self.assertEqual(
+                    resumed_generator.requests,
+                    [],
+                )
+
+                self.assertEqual(
+                    verifier.calls,
+                    1,
+                )
+
+                self.assertEqual(
+                    second_runtime
+                    .counters
+                    .codex_calls,
+                    2,
+                )
+
+                self.assertEqual(
+                    second_runtime
+                    .counters
+                    .claude_calls,
+                    1,
+                )
+
+                status = json.loads(
+                    (
+                        result_dir
+                        / "status.json"
+                    ).read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+                self.assertEqual(
+                    status["status"],
+                    "AUTO_FINISHED",
+                )
+
+            finally:
+                second_store.close()
 
 
 if __name__ == "__main__":

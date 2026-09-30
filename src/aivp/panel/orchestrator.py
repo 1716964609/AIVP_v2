@@ -18,6 +18,7 @@ from aivp.execution.runtime import Runtime
 from aivp.models.base import (
     ModelAdapter,
     ModelRequest,
+    ModelResult,
 )
 from aivp.models.claude import (
     blocking_findings,
@@ -50,6 +51,15 @@ from aivp.repository.git import (
 from aivp.risk.aggregate import normalize_risk
 from aivp.risk.base import RiskEngine
 from aivp.risk.engine import LegacyCompatibleRiskEngine
+from aivp.state.durable import (
+    DurableExecution,
+    begin_generation,
+    complete_generation,
+)
+from aivp.state.resume import (
+    build_resume_plan,
+    validate_resume_repository,
+)
 from aivp.verification.base import Verifier
 from aivp.verification.deterministic import (
     DeterministicVerifier,
@@ -99,8 +109,8 @@ def _invoke_edit(
     prompt: str,
     log_stem: str,
     role: str,
-) -> None:
-    adapter.invoke(
+) -> ModelResult:
+    return adapter.invoke(
         ModelRequest(
             role=role,
             prompt=prompt,
@@ -272,11 +282,23 @@ def execute_panel(
     verifier: Verifier,
     risk_engine: RiskEngine,
     artifacts: ArtifactRegistry,
+    durable: Optional[
+        DurableExecution
+    ] = None,
 ) -> Path:
     run_dir = runtime.run_dir
 
+    is_resume = (
+        durable is not None
+        and durable.is_resume
+    )
+
     runtime.log_event(
-        "run_start",
+        (
+            "run_resume"
+            if is_resume
+            else "run_start"
+        ),
         version=COMPAT_VERSION,
         repo=str(repo),
         dry_run=runtime.dry_run,
@@ -334,30 +356,101 @@ def execute_panel(
     with repo_lock(repo):
         assert_git_repo(repo)
 
+        resume_plan = None
+
         if not runtime.dry_run:
-            assert_clean_repo(repo)
+            if is_resume:
+                assert durable is not None
+                assert (
+                    durable.resume_checkpoint
+                    is not None
+                )
+
+                validate_resume_repository(
+                    repo=repo,
+                    checkpoint=(
+                        durable.resume_checkpoint
+                    ),
+                )
+
+                resume_plan = build_resume_plan(
+                    run_id=durable.run_id,
+                    checkpoint=(
+                        durable.resume_checkpoint
+                    ),
+                    artifact_records=list(
+                        durable.store
+                        .artifacts_for_run(
+                            durable.run_id
+                        )
+                    ),
+                )
+            else:
+                assert_clean_repo(repo)
 
         try:
-            initial_prompt = generate_prompt(
-                task_text
-            )
+            if resume_plan is None:
+                initial_prompt = (
+                    generate_prompt(
+                        task_text
+                    )
+                )
 
-            _write_text(
-                artifacts,
-                "generate-prompt",
-                run_dir
-                / "generate.prompt.txt",
-                initial_prompt,
-            )
+                _write_text(
+                    artifacts,
+                    "generate-prompt",
+                    run_dir
+                    / "generate.prompt.txt",
+                    initial_prompt,
+                )
 
-            _invoke_edit(
-                adapter=generator,
-                runtime=runtime,
-                repo=repo,
-                prompt=initial_prompt,
-                log_stem="codex-generate",
-                role="generator",
-            )
+                base_sha = None
+
+                if durable is not None:
+                    base_sha = (
+                        begin_generation(
+                            durable=durable,
+                            repo=repo,
+                        )
+                    )
+
+                generation_result = (
+                    _invoke_edit(
+                        adapter=generator,
+                        runtime=runtime,
+                        repo=repo,
+                        prompt=initial_prompt,
+                        log_stem=(
+                            "codex-generate"
+                        ),
+                        role="generator",
+                    )
+                )
+
+                if durable is not None:
+                    assert base_sha is not None
+
+                    complete_generation(
+                        durable=durable,
+                        runtime=runtime,
+                        repo=repo,
+                        prompt=initial_prompt,
+                        model_result=(
+                            generation_result
+                        ),
+                        base_sha=base_sha,
+                    )
+
+            else:
+                if (
+                    resume_plan.next_state
+                    != "VERIFYING"
+                ):
+                    raise AIVPError(
+                        "This M2 slice only "
+                        "supports resume from "
+                        "GENERATED"
+                    )
 
             review_index = 0
 

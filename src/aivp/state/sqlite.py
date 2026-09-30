@@ -140,6 +140,40 @@ class SQLiteStateStore:
 
         self._migrate()
 
+    def begin_run(
+        self,
+        *,
+        run_id: str,
+        repo_path: Path,
+        base_sha: str,
+        current_state: str,
+    ) -> None:
+        now = _now_iso()
+
+        self.connection.execute(
+            """
+            INSERT INTO runs(
+                run_id,
+                repo_path,
+                base_sha,
+                status,
+                current_state,
+                started_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                run_id,
+                str(repo_path),
+                base_sha,
+                "RUNNING",
+                current_state,
+                now,
+            ),
+        )
+
+        self.connection.commit()
+
     def record_artifact(
         self,
         *,

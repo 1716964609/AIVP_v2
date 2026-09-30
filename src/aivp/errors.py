@@ -18,3 +18,9 @@ class CommandFailed(AIVPError):
 
 class StateIntegrityError(AIVPError):
     pass
+
+
+
+class InjectedCrash(AIVPError):
+    """Intentional crash used for durable-execution fault injection."""
+    pass
