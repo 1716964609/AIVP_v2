@@ -643,5 +643,241 @@ class HarnessPanelTests(
                 second_store.close()
 
 
+    def test_resume_after_verification_runs_review_only(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            state_db = root / "state.db"
+
+            first_runtime = Runtime(
+                run_dir,
+                Budgets(),
+            )
+
+            first_store = SQLiteStateStore(
+                state_db
+            )
+
+            first_generator = (
+                EditingFakeModel(
+                    first_runtime,
+                    "codex",
+                    ["generated"],
+                )
+            )
+
+            first_verifier = (
+                FakeVerifier(
+                    [passed()]
+                )
+            )
+
+            try:
+                with self.assertRaises(
+                    InjectedCrash
+                ):
+                    execute_panel(
+                        runtime=first_runtime,
+                        repo=repo,
+                        task=self.task(),
+                        config=self.config(),
+                        generator=(
+                            first_generator
+                        ),
+                        reviewer=FakeModel(
+                            first_runtime,
+                            "claude",
+                            [REVIEW_LOW],
+                        ),
+                        risk_judge=FakeModel(
+                            first_runtime,
+                            "codex",
+                            [RISK_LOW],
+                        ),
+                        verifier=(
+                            first_verifier
+                        ),
+                        risk_engine=(
+                            LegacyCompatibleRiskEngine()
+                        ),
+                        artifacts=(
+                            ArtifactRegistry()
+                        ),
+                        durable=DurableExecution(
+                            store=first_store,
+                            run_id="run-verified",
+                            fault_after_state=(
+                                "VERIFIED"
+                            ),
+                        ),
+                    )
+
+                checkpoint = (
+                    first_store.load(
+                        "run-verified"
+                    )
+                )
+
+                self.assertIsNotNone(
+                    checkpoint
+                )
+
+                self.assertEqual(
+                    checkpoint["state"],
+                    "VERIFIED",
+                )
+
+                self.assertEqual(
+                    len(
+                        first_generator
+                        .requests
+                    ),
+                    1,
+                )
+
+                self.assertEqual(
+                    first_verifier.calls,
+                    1,
+                )
+
+                self.assertEqual(
+                    first_runtime
+                    .counters
+                    .codex_calls,
+                    1,
+                )
+
+            finally:
+                first_store.close()
+
+            assert checkpoint is not None
+
+            second_store = SQLiteStateStore(
+                state_db
+            )
+
+            try:
+                second_runtime = Runtime(
+                    run_dir,
+                    Budgets(),
+                    resume=True,
+                    counters=(
+                        counters_from_checkpoint(
+                            checkpoint
+                        )
+                    ),
+                )
+
+                resumed_generator = (
+                    FakeModel(
+                        second_runtime,
+                        "codex",
+                        [],
+                    )
+                )
+
+                resumed_verifier = (
+                    FakeVerifier([])
+                )
+
+                reviewer = FakeModel(
+                    second_runtime,
+                    "claude",
+                    [REVIEW_LOW],
+                )
+
+                result_dir = execute_panel(
+                    runtime=second_runtime,
+                    repo=repo,
+                    task=self.task(),
+                    config=self.config(),
+                    generator=(
+                        resumed_generator
+                    ),
+                    reviewer=reviewer,
+                    risk_judge=FakeModel(
+                        second_runtime,
+                        "codex",
+                        [RISK_LOW],
+                    ),
+                    verifier=(
+                        resumed_verifier
+                    ),
+                    risk_engine=(
+                        LegacyCompatibleRiskEngine()
+                    ),
+                    artifacts=(
+                        ArtifactRegistry()
+                    ),
+                    durable=DurableExecution(
+                        store=second_store,
+                        run_id="run-verified",
+                        attempt=2,
+                        resume_checkpoint=(
+                            checkpoint
+                        ),
+                    ),
+                )
+
+                self.assertEqual(
+                    resumed_generator.requests,
+                    [],
+                )
+
+                self.assertEqual(
+                    resumed_verifier.calls,
+                    0,
+                )
+
+                self.assertEqual(
+                    len(
+                        reviewer.requests
+                    ),
+                    1,
+                )
+
+                self.assertEqual(
+                    reviewer.requests[0].role,
+                    "reviewer",
+                )
+
+                self.assertEqual(
+                    second_runtime
+                    .counters
+                    .codex_calls,
+                    2,
+                )
+
+                self.assertEqual(
+                    second_runtime
+                    .counters
+                    .claude_calls,
+                    1,
+                )
+
+                status = json.loads(
+                    (
+                        result_dir
+                        / "status.json"
+                    ).read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+                self.assertEqual(
+                    status["status"],
+                    "AUTO_FINISHED",
+                )
+
+            finally:
+                second_store.close()
+
+
 if __name__ == "__main__":
     unittest.main()

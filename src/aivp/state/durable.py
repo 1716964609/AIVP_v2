@@ -6,11 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Optional, Any
 
-from aivp.artifacts.io import dump_text
+from aivp.artifacts.io import (
+    dump_json,
+    dump_text,
+)
 from aivp.errors import InjectedCrash
 from aivp.execution.runtime import (
     Counters,
     Runtime,
+    now_iso,
 )
 from aivp.models.base import ModelResult
 from aivp.repository.git import (
@@ -20,6 +24,7 @@ from aivp.repository.git import (
 from aivp.state.base import DurableStateStore
 from aivp.state.hashing import (
     sha256_file,
+    sha256_json,
     sha256_text,
 )
 
@@ -200,4 +205,120 @@ def complete_generation(
         raise InjectedCrash(
             "Injected crash after "
             "GENERATED checkpoint"
+        )
+
+
+
+def complete_verification(
+    *,
+    durable: DurableExecution,
+    runtime: Runtime,
+    repo: Path,
+    verification: Mapping[str, Any],
+) -> None:
+    verification_path = (
+        runtime.run_dir
+        / (
+            "durable-verification-"
+            f"{durable.attempt}.json"
+        )
+    )
+
+    dump_json(
+        verification_path,
+        dict(verification),
+    )
+
+    artifact_id = (
+        f"{durable.run_id}:"
+        f"verification:"
+        f"{durable.attempt}"
+    )
+
+    artifact_sha = sha256_file(
+        verification_path
+    )
+
+    durable.store.record_artifact(
+        artifact_id=artifact_id,
+        run_id=durable.run_id,
+        artifact_type=(
+            "deterministic-verification"
+        ),
+        path=verification_path,
+        sha256=artifact_sha,
+        size_bytes=(
+            verification_path.stat().st_size
+        ),
+    )
+
+    diff_text = capture_diff(
+        repo
+    )
+
+    diff_hash = sha256_text(
+        diff_text
+    )
+
+    base_sha = git(
+        repo,
+        "rev-parse",
+        "HEAD",
+    ).stdout.strip()
+
+    verification_hash = (
+        sha256_json(
+            dict(verification)
+        )
+    )
+
+    timestamp = now_iso()
+
+    checkpoint = {
+        "state": "VERIFIED",
+        "attempt": durable.attempt,
+        "repo_path": str(
+            repo.resolve()
+        ),
+        "run_dir": str(
+            runtime.run_dir.resolve()
+        ),
+        "base_sha": base_sha,
+        "current_diff_hash": diff_hash,
+        "verification_artifact_id": (
+            artifact_id
+        ),
+        "verification": dict(
+            verification
+        ),
+        "counters": dataclasses.asdict(
+            runtime.counters
+        ),
+    }
+
+    durable.store.complete_step(
+        step_id=(
+            f"{durable.run_id}:"
+            f"verify:"
+            f"{durable.attempt}"
+        ),
+        run_id=durable.run_id,
+        step_type="verify",
+        attempt=durable.attempt,
+        input_hash=diff_hash,
+        output_hash=verification_hash,
+        started_at=timestamp,
+        finished_at=timestamp,
+        retryable=False,
+        checkpoint_state="VERIFIED",
+        checkpoint_payload=checkpoint,
+    )
+
+    if (
+        durable.fault_after_state
+        == "VERIFIED"
+    ):
+        raise InjectedCrash(
+            "Injected crash after "
+            "VERIFIED checkpoint"
         )

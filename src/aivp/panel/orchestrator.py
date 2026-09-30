@@ -13,6 +13,7 @@ from aivp.artifacts.registry import ArtifactRegistry
 from aivp.errors import (
     AIVPError,
     BudgetExceeded,
+    StateIntegrityError,
 )
 from aivp.execution.runtime import Runtime
 from aivp.models.base import (
@@ -55,6 +56,7 @@ from aivp.state.durable import (
     DurableExecution,
     begin_generation,
     complete_generation,
+    complete_verification,
 )
 from aivp.state.resume import (
     build_resume_plan,
@@ -444,13 +446,55 @@ def execute_panel(
             else:
                 if (
                     resume_plan.next_state
-                    != "VERIFYING"
+                    not in {
+                        "VERIFYING",
+                        "REVIEWING",
+                    }
                 ):
                     raise AIVPError(
-                        "This M2 slice only "
-                        "supports resume from "
-                        "GENERATED"
+                        "Unsupported durable "
+                        "resume state"
                     )
+
+            skip_verification_once = False
+
+            if (
+                resume_plan is not None
+                and resume_plan.next_state
+                == "REVIEWING"
+            ):
+                assert durable is not None
+                assert (
+                    durable.resume_checkpoint
+                    is not None
+                )
+
+                restored = (
+                    durable.resume_checkpoint
+                    .get("verification")
+                )
+
+                if (
+                    not isinstance(
+                        restored,
+                        dict,
+                    )
+                    or not restored.get(
+                        "passed"
+                    )
+                ):
+                    raise StateIntegrityError(
+                        "VERIFIED checkpoint "
+                        "does not contain a "
+                        "valid successful "
+                        "verification result"
+                    )
+
+                verification = dict(
+                    restored
+                )
+
+                skip_verification_once = True
 
             review_index = 0
 
@@ -460,11 +504,27 @@ def execute_panel(
                     f"{runtime.counters.fix_iterations}"
                 )
 
-                verification = verifier.verify(
-                    repo=repo,
-                    config=config,
-                    phase=phase,
-                )
+                if skip_verification_once:
+                    skip_verification_once = False
+                else:
+                    verification = verifier.verify(
+                        repo=repo,
+                        config=config,
+                        phase=phase,
+                    )
+
+                    if (
+                        verification["passed"]
+                        and durable is not None
+                    ):
+                        complete_verification(
+                            durable=durable,
+                            runtime=runtime,
+                            repo=repo,
+                            verification=(
+                                verification
+                            ),
+                        )
 
                 if not verification[
                     "passed"
