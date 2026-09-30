@@ -192,6 +192,23 @@ class SQLiteStateStore:
             (artifact_id,),
         ).fetchone()
 
+
+    def artifacts_for_run(
+        self,
+        run_id: str,
+    ) -> list[sqlite3.Row]:
+        return list(
+            self.connection.execute(
+                """
+                SELECT *
+                FROM artifacts
+                WHERE run_id = ?
+                ORDER BY created_at, artifact_id
+                """,
+                (run_id,),
+            ).fetchall()
+        )
+
     def complete_step(
         self,
         *,

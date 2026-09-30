@@ -190,5 +190,51 @@ class SQLiteStateStoreTests(
                 )
 
 
+    def test_artifacts_can_be_loaded_by_run(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = (
+                Path(tmp) / "state.db"
+            )
+
+            artifact_path = (
+                Path(tmp) / "result.txt"
+            )
+
+            artifact_path.write_text(
+                "result",
+                encoding="utf-8",
+            )
+
+            with SQLiteStateStore(
+                db_path
+            ) as store:
+                store.record_artifact(
+                    artifact_id="artifact-1",
+                    run_id="run-1",
+                    artifact_type="model-result",
+                    path=artifact_path,
+                    sha256="abc",
+                    size_bytes=6,
+                )
+
+                rows = (
+                    store.artifacts_for_run(
+                        "run-1"
+                    )
+                )
+
+                self.assertEqual(
+                    len(rows),
+                    1,
+                )
+
+                self.assertEqual(
+                    rows[0]["artifact_id"],
+                    "artifact-1",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

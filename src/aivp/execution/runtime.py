@@ -1,5 +1,6 @@
 import dataclasses
 import datetime as dt
+import json
 import os
 import shlex
 import subprocess
@@ -54,13 +55,46 @@ class Runtime:
         run_dir: Path,
         budgets: Budgets,
         dry_run: bool = False,
+        resume: bool = False,
+        counters: Optional[Counters] = None,
     ):
         self.run_dir = run_dir
         self.budgets = budgets
-        self.counters = Counters()
+        self.counters = counters or Counters()
         self.started = time.monotonic()
         self.dry_run = dry_run
         self.events: List[Dict[str, Any]] = []
+
+        if resume:
+            events_path = (
+                self.run_dir / "events.json"
+            )
+
+            if events_path.exists():
+                try:
+                    loaded = json.loads(
+                        events_path.read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                except (
+                    OSError,
+                    json.JSONDecodeError,
+                ) as exc:
+                    raise AIVPError(
+                        "Cannot restore runtime events"
+                    ) from exc
+
+                if not isinstance(
+                    loaded,
+                    list,
+                ):
+                    raise AIVPError(
+                        "Runtime events artifact "
+                        "must contain a JSON list"
+                    )
+
+                self.events = loaded
 
     def remaining_seconds(self) -> float:
         used = time.monotonic() - self.started

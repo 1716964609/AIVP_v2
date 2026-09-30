@@ -1,3 +1,4 @@
+import subprocess
 import tempfile
 import unittest
 
@@ -5,7 +6,16 @@ from pathlib import Path
 
 from aivp.errors import StateIntegrityError
 from aivp.state.hashing import sha256_file
-from aivp.state.resume import build_resume_plan
+from aivp.state.resume import (
+    build_resume_plan,
+    validate_resume_repository,
+)
+from aivp.repository.git import (
+    capture_diff,
+)
+from aivp.state.hashing import (
+    sha256_text,
+)
 
 
 class ResumePlanTests(unittest.TestCase):
@@ -121,6 +131,202 @@ class ResumePlanTests(unittest.TestCase):
                 },
                 artifact_records=[],
             )
+
+
+    def test_repository_integrity_matches_checkpoint(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir()
+
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "aivp@example.invalid",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            target = repo / "file.txt"
+            target.write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            base_sha = subprocess.run(
+                [
+                    "git",
+                    "rev-parse",
+                    "HEAD",
+                ],
+                cwd=repo,
+                check=True,
+                text=True,
+                stdout=subprocess.PIPE,
+            ).stdout.strip()
+
+            target.write_text(
+                "generated\n",
+                encoding="utf-8",
+            )
+
+            checkpoint = {
+                "repo_path": str(
+                    repo.resolve()
+                ),
+                "base_sha": base_sha,
+                "current_diff_hash": (
+                    sha256_text(
+                        capture_diff(repo)
+                    )
+                ),
+            }
+
+            validate_resume_repository(
+                repo=repo,
+                checkpoint=checkpoint,
+            )
+
+    def test_repository_diff_tamper_fails_closed(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir()
+
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "aivp@example.invalid",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            target = repo / "file.txt"
+
+            target.write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            base_sha = subprocess.run(
+                [
+                    "git",
+                    "rev-parse",
+                    "HEAD",
+                ],
+                cwd=repo,
+                check=True,
+                text=True,
+                stdout=subprocess.PIPE,
+            ).stdout.strip()
+
+            target.write_text(
+                "generated\n",
+                encoding="utf-8",
+            )
+
+            checkpoint = {
+                "repo_path": str(
+                    repo.resolve()
+                ),
+                "base_sha": base_sha,
+                "current_diff_hash": (
+                    sha256_text(
+                        capture_diff(repo)
+                    )
+                ),
+            }
+
+            target.write_text(
+                "tampered\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(
+                StateIntegrityError
+            ):
+                validate_resume_repository(
+                    repo=repo,
+                    checkpoint=checkpoint,
+                )
 
 
 if __name__ == "__main__":

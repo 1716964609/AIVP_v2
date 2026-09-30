@@ -65,3 +65,68 @@ def build_resume_plan(
         next_state=NEXT_STATE[state],
         resume_attempt=attempt + 1,
     )
+
+
+def validate_resume_repository(
+    *,
+    repo: Path,
+    checkpoint: Mapping[str, Any],
+) -> None:
+    from aivp.repository.git import (
+        capture_diff,
+        git,
+    )
+    from aivp.state.hashing import (
+        sha256_text,
+    )
+
+    if not repo.exists():
+        raise StateIntegrityError(
+            f"Resume repository missing: {repo}"
+        )
+
+    required = (
+        "repo_path",
+        "base_sha",
+        "current_diff_hash",
+    )
+
+    for key in required:
+        if key not in checkpoint:
+            raise StateIntegrityError(
+                "Checkpoint missing required "
+                f"field: {key}"
+            )
+
+    expected_repo = Path(
+        str(checkpoint["repo_path"])
+    ).resolve()
+
+    if repo.resolve() != expected_repo:
+        raise StateIntegrityError(
+            "Resume repository path mismatch"
+        )
+
+    current_base = git(
+        repo,
+        "rev-parse",
+        "HEAD",
+    ).stdout.strip()
+
+    if current_base != str(
+        checkpoint["base_sha"]
+    ):
+        raise StateIntegrityError(
+            "Resume base SHA mismatch"
+        )
+
+    current_diff_hash = sha256_text(
+        capture_diff(repo)
+    )
+
+    if current_diff_hash != str(
+        checkpoint["current_diff_hash"]
+    ):
+        raise StateIntegrityError(
+            "Resume diff hash mismatch"
+        )
