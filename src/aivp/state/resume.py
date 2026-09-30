@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Mapping
+
+from aivp.errors import StateIntegrityError
+from aivp.state.integrity import validate_artifact
+
+
+@dataclass(frozen=True)
+class ResumePlan:
+    run_id: str
+    current_state: str
+    next_state: str
+    resume_attempt: int
+
+
+NEXT_STATE = {
+    "GENERATED": "VERIFYING",
+    "VERIFIED": "REVIEWING",
+    "REVIEWED": "RISK_ASSESSING",
+    "RISK_ASSESSED": "AUTO_FINISHED",
+}
+
+
+def build_resume_plan(
+    *,
+    run_id: str,
+    checkpoint: Mapping[str, Any],
+    artifact_records: list[Mapping[str, Any]],
+) -> ResumePlan:
+    state = str(
+        checkpoint.get("state", "")
+    )
+
+    if state not in NEXT_STATE:
+        raise StateIntegrityError(
+            f"Checkpoint state is not resumable: {state}"
+        )
+
+    for artifact in artifact_records:
+        validate_artifact(
+            path=Path(
+                artifact["path"]
+            ),
+            expected_sha256=str(
+                artifact["sha256"]
+            ),
+            expected_size_bytes=int(
+                artifact["size_bytes"]
+            ),
+        )
+
+    attempt = int(
+        checkpoint.get(
+            "attempt",
+            1,
+        )
+    )
+
+    return ResumePlan(
+        run_id=run_id,
+        current_state=state,
+        next_state=NEXT_STATE[state],
+        resume_attempt=attempt + 1,
+    )
