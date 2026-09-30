@@ -503,7 +503,7 @@ class HarnessPanelTests(
                     )
 
                 checkpoint = (
-                    first_store.load(
+                    first_store.load_resume_checkpoint(
                         "run-1"
                     )
                 )
@@ -719,7 +719,7 @@ class HarnessPanelTests(
                     )
 
                 checkpoint = (
-                    first_store.load(
+                    first_store.load_resume_checkpoint(
                         "run-verified"
                     )
                 )

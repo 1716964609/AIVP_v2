@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from aivp.errors import StateIntegrityError
+
 
 SCHEMA_VERSION = 1
 
@@ -482,6 +484,186 @@ class SQLiteStateStore:
         return json.loads(
             row["payload_json"]
         )
+
+    def load_resume_checkpoint(
+        self,
+        run_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        row = self.connection.execute(
+            """
+            SELECT
+                c.state AS checkpoint_state,
+                c.payload_json,
+                r.current_state AS run_state
+            FROM checkpoints AS c
+            JOIN runs AS r
+              ON r.run_id = c.run_id
+            WHERE c.run_id = ?
+            ORDER BY c.rowid DESC
+            LIMIT 1
+            """,
+            (run_id,),
+        ).fetchone()
+
+        if row is None:
+            return None
+
+        try:
+            payload = json.loads(
+                row["payload_json"]
+            )
+        except json.JSONDecodeError as exc:
+            raise StateIntegrityError(
+                "Checkpoint payload is "
+                "not valid JSON"
+            ) from exc
+
+        if not isinstance(
+            payload,
+            dict,
+        ):
+            raise StateIntegrityError(
+                "Checkpoint payload "
+                "must be a JSON object"
+            )
+
+        state = payload.get("state")
+
+        if not isinstance(
+            state,
+            str,
+        ):
+            raise StateIntegrityError(
+                "Checkpoint state missing"
+            )
+
+        if state != row[
+            "checkpoint_state"
+        ]:
+            raise StateIntegrityError(
+                "Checkpoint payload/state "
+                "mismatch"
+            )
+
+        if state != row["run_state"]:
+            raise StateIntegrityError(
+                "Checkpoint/run state "
+                "mismatch"
+            )
+
+        required = {
+            "attempt",
+            "repo_path",
+            "run_dir",
+            "base_sha",
+            "current_diff_hash",
+            "counters",
+        }
+
+        missing = sorted(
+            key
+            for key in required
+            if key not in payload
+        )
+
+        if missing:
+            raise StateIntegrityError(
+                "Checkpoint missing "
+                "required fields: "
+                + ", ".join(missing)
+            )
+
+        expected_step_type = {
+            "GENERATED": "generate",
+            "VERIFIED": "verify",
+        }.get(state)
+
+        if expected_step_type is not None:
+            step = self.connection.execute(
+                """
+                SELECT *
+                FROM steps
+                WHERE run_id = ?
+                  AND status = 'SUCCEEDED'
+                ORDER BY rowid DESC
+                LIMIT 1
+                """,
+                (run_id,),
+            ).fetchone()
+
+            if step is None:
+                raise StateIntegrityError(
+                    "Checkpoint has no "
+                    "SUCCEEDED step"
+                )
+
+            if (
+                step["step_type"]
+                != expected_step_type
+            ):
+                raise StateIntegrityError(
+                    "Checkpoint/latest step "
+                    "mismatch"
+                )
+
+            if state == "GENERATED":
+                if (
+                    step["output_hash"]
+                    != payload[
+                        "current_diff_hash"
+                    ]
+                ):
+                    raise StateIntegrityError(
+                        "Generated checkpoint "
+                        "output hash mismatch"
+                    )
+
+            if state == "VERIFIED":
+                if (
+                    step["input_hash"]
+                    != payload[
+                        "current_diff_hash"
+                    ]
+                ):
+                    raise StateIntegrityError(
+                        "Verified checkpoint "
+                        "input hash mismatch"
+                    )
+
+                if (
+                    step["output_hash"]
+                    != payload.get(
+                        "verification_hash"
+                    )
+                ):
+                    raise StateIntegrityError(
+                        "Verified checkpoint "
+                        "output hash mismatch"
+                    )
+
+                verification = (
+                    payload.get(
+                        "verification"
+                    )
+                )
+
+                if (
+                    not isinstance(
+                        verification,
+                        dict,
+                    )
+                    or not verification.get(
+                        "passed"
+                    )
+                ):
+                    raise StateIntegrityError(
+                        "Verified checkpoint "
+                        "contains invalid "
+                        "verification evidence"
+                    )
+
+        return payload
+
 
     def schema_version(self) -> int:
         return self.connection.execute(

@@ -1,9 +1,11 @@
+import json
 import sqlite3
 import tempfile
 import unittest
 
 from pathlib import Path
 
+from aivp.errors import StateIntegrityError
 from aivp.state.sqlite import (
     SCHEMA_VERSION,
     SQLiteStateStore,
@@ -234,6 +236,123 @@ class SQLiteStateStoreTests(
                     rows[0]["artifact_id"],
                     "artifact-1",
                 )
+
+
+    def test_malformed_checkpoint_fails_closed(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = (
+                Path(tmp) / "state.db"
+            )
+
+            with SQLiteStateStore(
+                db_path
+            ) as store:
+                store.begin_run(
+                    run_id="run-broken",
+                    repo_path=Path(tmp),
+                    base_sha="base",
+                    current_state="GENERATED",
+                )
+
+                store.connection.execute(
+                    """
+                    INSERT INTO checkpoints(
+                        checkpoint_id,
+                        run_id,
+                        state,
+                        payload_json,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "broken",
+                        "run-broken",
+                        "GENERATED",
+                        "{not-json",
+                        "now",
+                    ),
+                )
+
+                store.connection.commit()
+
+                with self.assertRaises(
+                    StateIntegrityError
+                ):
+                    (
+                        store
+                        .load_resume_checkpoint(
+                            "run-broken"
+                        )
+                    )
+
+    def test_checkpoint_state_tamper_fails_closed(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = (
+                Path(tmp) / "state.db"
+            )
+
+            with SQLiteStateStore(
+                db_path
+            ) as store:
+                store.begin_run(
+                    run_id="run-tampered",
+                    repo_path=Path(tmp),
+                    base_sha="base",
+                    current_state="GENERATED",
+                )
+
+                payload = {
+                    "state": "VERIFIED",
+                    "attempt": 1,
+                    "repo_path": str(
+                        Path(tmp)
+                    ),
+                    "run_dir": str(
+                        Path(tmp)
+                    ),
+                    "base_sha": "base",
+                    "current_diff_hash": (
+                        "diff"
+                    ),
+                    "counters": {},
+                }
+
+                store.connection.execute(
+                    """
+                    INSERT INTO checkpoints(
+                        checkpoint_id,
+                        run_id,
+                        state,
+                        payload_json,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "tampered",
+                        "run-tampered",
+                        "GENERATED",
+                        json.dumps(payload),
+                        "now",
+                    ),
+                )
+
+                store.connection.commit()
+
+                with self.assertRaises(
+                    StateIntegrityError
+                ):
+                    (
+                        store
+                        .load_resume_checkpoint(
+                            "run-tampered"
+                        )
+                    )
 
 
 if __name__ == "__main__":

@@ -288,6 +288,9 @@ def complete_verification(
         "verification_artifact_id": (
             artifact_id
         ),
+        "verification_hash": (
+            verification_hash
+        ),
         "verification": dict(
             verification
         ),
