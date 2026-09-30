@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -240,6 +241,286 @@ class ProcessResumeTests(
                 ),
                 1,
             )
+
+    def test_hard_crash_after_verification_resumes_at_review(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            repo = root / "repo"
+            repo.mkdir()
+
+            subprocess.run(
+                ["git", "init"],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "test@example.com",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            (
+                repo / "README.md"
+            ).write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            src = (
+                Path(__file__)
+                .resolve()
+                .parents[2]
+                / "src"
+            )
+
+            driver = (
+                Path(__file__)
+                .with_name(
+                    "process_resume_driver.py"
+                )
+            )
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(src)
+            env[
+                "AIVP_ENABLE_FAULT_INJECTION"
+            ] = "1"
+            env[
+                "AIVP_HARD_CRASH_AFTER_STATE"
+            ] = "VERIFIED"
+
+            first = subprocess.run(
+                [
+                    sys.executable,
+                    str(driver),
+                    "start",
+                    str(root),
+                ],
+                env=env,
+            )
+
+            self.assertEqual(
+                first.returncode,
+                97,
+            )
+
+            db_path = root / "state.db"
+
+            with sqlite3.connect(
+                db_path
+            ) as connection:
+                verification_artifacts = (
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM artifacts
+                        WHERE run_id = ?
+                          AND type = ?
+                        """,
+                        (
+                            "process-resume-test",
+                            (
+                                "deterministic-"
+                                "verification"
+                            ),
+                        ),
+                    ).fetchone()[0]
+                )
+
+                verify_steps = (
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM steps
+                        WHERE run_id = ?
+                          AND step_type = ?
+                          AND status = ?
+                        """,
+                        (
+                            "process-resume-test",
+                            "verify",
+                            "SUCCEEDED",
+                        ),
+                    ).fetchone()[0]
+                )
+
+            # VERIFIED checkpoint must already
+            # contain exactly one successful
+            # verification result.
+            self.assertEqual(
+                verification_artifacts,
+                1,
+            )
+
+            self.assertEqual(
+                verify_steps,
+                1,
+            )
+
+            resume_env = os.environ.copy()
+            resume_env["PYTHONPATH"] = str(src)
+
+            second = subprocess.run(
+                [
+                    sys.executable,
+                    str(driver),
+                    "resume",
+                    str(root),
+                ],
+                env=resume_env,
+            )
+
+            self.assertEqual(
+                second.returncode,
+                0,
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "AUTO_FINISHED",
+            )
+
+            # Generate happened once before
+            # the crash. Risk is the only
+            # additional Codex call.
+            self.assertEqual(
+                status["metrics"][
+                    "codex_calls"
+                ],
+                2,
+            )
+
+            # Review happens once after resume.
+            self.assertEqual(
+                status["metrics"][
+                    "claude_calls"
+                ],
+                1,
+            )
+
+            with sqlite3.connect(
+                db_path
+            ) as connection:
+                verification_artifacts_after = (
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM artifacts
+                        WHERE run_id = ?
+                          AND type = ?
+                        """,
+                        (
+                            "process-resume-test",
+                            (
+                                "deterministic-"
+                                "verification"
+                            ),
+                        ),
+                    ).fetchone()[0]
+                )
+
+                verify_steps_after = (
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM steps
+                        WHERE run_id = ?
+                          AND step_type = ?
+                          AND status = ?
+                        """,
+                        (
+                            "process-resume-test",
+                            "verify",
+                            "SUCCEEDED",
+                        ),
+                    ).fetchone()[0]
+                )
+
+                generated_artifacts_after = (
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM artifacts
+                        WHERE run_id = ?
+                          AND type = ?
+                        """,
+                        (
+                            "process-resume-test",
+                            "generated-diff",
+                        ),
+                    ).fetchone()[0]
+                )
+
+            # Resume from VERIFIED must not
+            # execute Verify or Generate again.
+            self.assertEqual(
+                verification_artifacts_after,
+                1,
+            )
+
+            self.assertEqual(
+                verify_steps_after,
+                1,
+            )
+
+            self.assertEqual(
+                generated_artifacts_after,
+                1,
+            )
+
 
 
 if __name__ == "__main__":
