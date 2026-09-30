@@ -6,7 +6,13 @@ import uuid
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import (
+    Any,
+    Dict,
+    Mapping,
+    Optional,
+    Sequence,
+)
 
 from aivp.errors import StateIntegrityError
 
@@ -259,10 +265,51 @@ class SQLiteStateStore:
         retryable: bool,
         checkpoint_state: str,
         checkpoint_payload: Dict[str, Any],
+        artifacts: Sequence[
+            Mapping[str, Any]
+        ] = (),
     ) -> None:
         now = _now_iso()
 
         with self.connection:
+            for artifact in artifacts:
+                self.connection.execute(
+                    """
+                    INSERT INTO artifacts(
+                        artifact_id,
+                        run_id,
+                        type,
+                        path,
+                        sha256,
+                        size_bytes,
+                        sensitive,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        artifact["artifact_id"],
+                        run_id,
+                        artifact["artifact_type"],
+                        str(artifact["path"]),
+                        artifact["sha256"],
+                        int(
+                            artifact[
+                                "size_bytes"
+                            ]
+                        ),
+                        int(
+                            bool(
+                                artifact.get(
+                                    "sensitive",
+                                    False,
+                                )
+                            )
+                        ),
+                        now,
+                    ),
+                )
+
             self.connection.execute(
                 """
                 INSERT INTO steps(
@@ -302,7 +349,7 @@ class SQLiteStateStore:
                 ),
             )
 
-            self.connection.execute(
+            cursor = self.connection.execute(
                 """
                 UPDATE runs
                 SET current_state = ?,
@@ -315,6 +362,12 @@ class SQLiteStateStore:
                     run_id,
                 ),
             )
+
+            if cursor.rowcount != 1:
+                raise StateIntegrityError(
+                    "Cannot complete step for "
+                    f"missing run: {run_id}"
+                )
 
             self.connection.execute(
                 """

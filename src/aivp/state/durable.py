@@ -156,17 +156,6 @@ def complete_generation(
         diff_path
     )
 
-    durable.store.record_artifact(
-        artifact_id=artifact_id,
-        run_id=durable.run_id,
-        artifact_type="generated-diff",
-        path=diff_path,
-        sha256=artifact_sha,
-        size_bytes=(
-            diff_path.stat().st_size
-        ),
-    )
-
     diff_hash = sha256_text(
         diff_text
     )
@@ -227,6 +216,19 @@ def complete_generation(
         retryable=False,
         checkpoint_state="GENERATED",
         checkpoint_payload=checkpoint,
+        artifacts=[
+            {
+                "artifact_id": artifact_id,
+                "artifact_type": (
+                    "generated-diff"
+                ),
+                "path": diff_path,
+                "sha256": artifact_sha,
+                "size_bytes": (
+                    diff_path.stat().st_size
+                ),
+            }
+        ],
     )
 
     _hard_crash_if_requested(
@@ -274,19 +276,6 @@ def complete_verification(
 
     artifact_sha = sha256_file(
         verification_path
-    )
-
-    durable.store.record_artifact(
-        artifact_id=artifact_id,
-        run_id=durable.run_id,
-        artifact_type=(
-            "deterministic-verification"
-        ),
-        path=verification_path,
-        sha256=artifact_sha,
-        size_bytes=(
-            verification_path.stat().st_size
-        ),
     )
 
     diff_text = capture_diff(
@@ -358,6 +347,21 @@ def complete_verification(
         retryable=False,
         checkpoint_state="VERIFIED",
         checkpoint_payload=checkpoint,
+        artifacts=[
+            {
+                "artifact_id": artifact_id,
+                "artifact_type": (
+                    "deterministic-verification"
+                ),
+                "path": verification_path,
+                "sha256": artifact_sha,
+                "size_bytes": (
+                    verification_path
+                    .stat()
+                    .st_size
+                ),
+            }
+        ],
     )
 
     _hard_crash_if_requested(

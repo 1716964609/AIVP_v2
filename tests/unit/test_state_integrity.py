@@ -160,6 +160,112 @@ class StateIntegrityTests(
                     "run-1:generate:1",
                 )
 
+    def test_step_artifact_and_checkpoint_roll_back_together(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            db_path = root / "state.db"
+            artifact_path = (
+                root / "artifact.txt"
+            )
+
+            artifact_path.write_text(
+                "durable artifact",
+                encoding="utf-8",
+            )
+
+            now = datetime.now(
+                timezone.utc
+            ).isoformat()
+
+            with SQLiteStateStore(
+                db_path
+            ) as store:
+                # Deliberately do NOT create run-404.
+                # UPDATE runs must fail the integrity
+                # invariant and roll the whole DB
+                # transaction back.
+                with self.assertRaises(
+                    StateIntegrityError
+                ):
+                    store.complete_step(
+                        step_id=(
+                            "run-404:"
+                            "generate:1"
+                        ),
+                        run_id="run-404",
+                        step_type="generate",
+                        attempt=1,
+                        input_hash="input",
+                        output_hash="output",
+                        started_at=now,
+                        finished_at=now,
+                        retryable=False,
+                        checkpoint_state=(
+                            "GENERATED"
+                        ),
+                        checkpoint_payload={
+                            "state": (
+                                "GENERATED"
+                            ),
+                            "attempt": 1,
+                        },
+                        artifacts=[
+                            {
+                                "artifact_id": (
+                                    "artifact-404"
+                                ),
+                                "artifact_type": (
+                                    "generated-diff"
+                                ),
+                                "path": (
+                                    artifact_path
+                                ),
+                                "sha256": (
+                                    sha256_file(
+                                        artifact_path
+                                    )
+                                ),
+                                "size_bytes": (
+                                    artifact_path
+                                    .stat()
+                                    .st_size
+                                ),
+                            }
+                        ],
+                    )
+
+                self.assertIsNone(
+                    store.load_step(
+                        "run-404:generate:1"
+                    )
+                )
+
+                self.assertIsNone(
+                    store.load_artifact(
+                        "artifact-404"
+                    )
+                )
+
+                checkpoint_count = (
+                    store.connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM checkpoints
+                        WHERE run_id = ?
+                        """,
+                        ("run-404",),
+                    ).fetchone()[0]
+                )
+
+                self.assertEqual(
+                    checkpoint_count,
+                    0,
+                )
+
+
 
 if __name__ == "__main__":
     unittest.main()
