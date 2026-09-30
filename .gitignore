@@ -8,3 +8,9 @@ __pycache__/
 .aivp/
 artifacts/
 reports/
+
+# Python virtual environment
+.venv/
+
+# Python package build metadata
+*.egg-info/
