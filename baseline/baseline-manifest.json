@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "baseline_name": "AIVP v1 frozen baseline",
+
+  "harness": {
+    "repository": "AIVP_MVP_v1",
+    "version": "v1.0.0-mvp",
+    "commit": "89eaa254594ff2299a2bc1c0349f487f9f6bc11a"
+  },
+
+  "target_repository": {
+    "repository": "aivp-test-repo",
+    "baseline_refs": {
+      "low": {
+        "tag": "aivp-v1-base-low",
+        "commit": "81d6f523933b0d651acd779f7864c3e737a207cb"
+      },
+      "pricing": {
+        "tag": "aivp-v1-base-pricing",
+        "commit": "0e2ae21d9096a6cb6b9f9bb35442b725dc663d95"
+      },
+      "high": {
+        "tag": "aivp-v1-base-high",
+        "commit": "6661a1bdcc504cc4a8692a80baa8c6d963f8262a"
+      }
+    }
+  },
+
+  "cases": [
+    {
+      "id": "001-low",
+      "class": "low-risk-local-change",
+      "task": "config/task-low.json",
+      "task_sha256": "8bba255f5ddb842ca2b85311f3f7c007e0700793c0ee40991139debfaaf6b3f8",
+      "config": "config/aivp-config.json",
+      "config_sha256": "87b383800d05acb0c28976c7762839c38f59a6b6d9419114cd83587076b0ca0f",
+      "target_base_sha": "81d6f523933b0d651acd779f7864c3e737a207cb",
+      "historical_status": "AUTO_FINISHED",
+      "historical_result_commit": "b37a4c5db93f0cd7d9324a43735e46ee4b45927f",
+      "artifact": "AIVP_Run_001_LOW_PASS.zip",
+      "artifact_sha256": "4480864def349d5fadb7e0b6db0bb0280f9830ec68d57f269f194b893232d31b"
+    },
+
+    {
+      "id": "002-medium",
+      "class": "business-logic-change",
+      "task": "config/task-medium.json",
+      "task_sha256": "cf9da58f9bc37ec55000fc9e8c21d3ef4d9592765acfd4a6681199d57d1f3ae1",
+      "config": "config/aivp-config.json",
+      "config_sha256": "87b383800d05acb0c28976c7762839c38f59a6b6d9419114cd83587076b0ca0f",
+      "target_base_sha": "0e2ae21d9096a6cb6b9f9bb35442b725dc663d95",
+      "historical_status": "AUTO_FINISHED",
+      "historical_result_commit": "7399823bc66f65cd1886b7d6e5ffc23e9003c0d1",
+      "artifact": "AIVP_Run_002_MEDIUM_PASS.zip",
+      "artifact_sha256": "cee3b9e337c90f3647f53a59b91e737ae592a3ea1ff3bfa61f7f3a9e3f1cd118"
+    },
+
+    {
+      "id": "002f1-conflict",
+      "class": "specification-contract-conflict",
+      "task": "config/task-fault-002f.json",
+      "task_sha256": "cf9da58f9bc37ec55000fc9e8c21d3ef4d9592765acfd4a6681199d57d1f3ae1",
+      "config": "config/aivp-config-fault.json",
+      "config_sha256": "2f2629b7427f627f10e2f92d370970ae10b60bec0e99cb7f54fb87fa85d477d9",
+      "target_base_sha": "0e2ae21d9096a6cb6b9f9bb35442b725dc663d95",
+      "target_base_sha_provenance": "inferred_from_repository_history",
+      "historical_status": "HUMAN_REQUIRED",
+      "historical_result_commit": null,
+      "artifact": "AIVP_Run_002F1_CONFLICT_HUMAN_REQUIRED.zip",
+      "artifact_sha256": "c43249c51c65251073565fe38dae50788c6b2f4459c494c0c86b577d678794fb"
+    },
+
+    {
+      "id": "002f2-repair",
+      "class": "controlled-fault-repair",
+      "task": "config/task-fault-002f2.json",
+      "task_sha256": "cf9da58f9bc37ec55000fc9e8c21d3ef4d9592765acfd4a6681199d57d1f3ae1",
+      "config": "config/aivp-config-fault2.json",
+      "config_sha256": "364e9f1408094585a5b6722db865bc3e6ed84aa0aca3dbe650fe4c8c8a193862",
+      "target_base_sha": "0e2ae21d9096a6cb6b9f9bb35442b725dc663d95",
+      "historical_status": "AUTO_FINISHED",
+      "historical_result_commit": "1e802bf1e974b07f3d869dfdef38f3c726feef4d",
+      "artifact": "AIVP_Run_002F2_AUTONOMOUS_REPAIR_PASS.zip",
+      "artifact_sha256": "4e14495777f5823a1d49f02570b1d648967b7980a194a8dfb3d2dd71f1cac31f"
+    },
+
+    {
+      "id": "003-high",
+      "class": "high-risk-authorization-change",
+      "task": "config/task-high.json",
+      "task_sha256": "cf2f6f146ddf84c8285c6987619bf07f72d535368f117aa9f851765297054d80",
+      "config": "config/aivp-config.json",
+      "config_sha256": "87b383800d05acb0c28976c7762839c38f59a6b6d9419114cd83587076b0ca0f",
+      "target_base_sha": "6661a1bdcc504cc4a8692a80baa8c6d963f8262a",
+      "historical_status": "HUMAN_REQUIRED",
+      "historical_result_commit": "e04f8b16771e329cc6eee911be32089dbdc200c7",
+      "artifact": "AIVP_Run_003_HIGH_RISK_HUMAN_GATE_PASS.zip",
+      "artifact_sha256": "ce2833e7a3c1a98ea4a1fe48e6ccdc15cff0bd9b53b26939d9a8dca945d8cfc5"
+    }
+  ]
+}
