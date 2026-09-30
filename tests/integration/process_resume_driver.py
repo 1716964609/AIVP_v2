@@ -27,6 +27,7 @@ from aivp.risk.engine import (
 from aivp.state.durable import (
     DurableExecution,
     counters_from_checkpoint,
+    elapsed_from_checkpoint,
 )
 from aivp.state.sqlite import (
     SQLiteStateStore,
@@ -191,6 +192,11 @@ def main() -> int:
                 resume=True,
                 counters=(
                     counters_from_checkpoint(
+                        checkpoint
+                    )
+                ),
+                elapsed_before_resume=(
+                    elapsed_from_checkpoint(
                         checkpoint
                     )
                 ),

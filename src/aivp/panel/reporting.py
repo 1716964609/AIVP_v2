@@ -29,8 +29,7 @@ def write_metrics(
         ),
         "finished_at": now_iso(),
         "elapsed_seconds": round(
-            time.monotonic()
-            - runtime.started,
+            runtime.elapsed_seconds(),
             3,
         ),
         "codex_calls": (

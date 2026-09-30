@@ -2,7 +2,11 @@ import json
 import tempfile
 import unittest
 
+from unittest.mock import patch
+
 from pathlib import Path
+
+from aivp.errors import BudgetExceeded
 
 from aivp.execution.runtime import (
     Budgets,
@@ -73,6 +77,78 @@ class RuntimeResumeTests(
                     "after_resume",
                 ],
             )
+
+    def test_resume_preserves_elapsed_budget(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+
+            budgets = Budgets(
+                whole_run_timeout_seconds=10
+            )
+
+            with patch(
+                "aivp.execution.runtime."
+                "time.monotonic",
+                return_value=100.0,
+            ):
+                restored = Runtime(
+                    run_dir,
+                    budgets,
+                    resume=True,
+                    elapsed_before_resume=7.0,
+                )
+
+            with patch(
+                "aivp.execution.runtime."
+                "time.monotonic",
+                return_value=102.0,
+            ):
+                self.assertAlmostEqual(
+                    restored.elapsed_seconds(),
+                    9.0,
+                )
+
+                self.assertAlmostEqual(
+                    restored.remaining_seconds(),
+                    1.0,
+                )
+
+    def test_resume_rejects_call_when_elapsed_budget_exhausted(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+
+            budgets = Budgets(
+                whole_run_timeout_seconds=10
+            )
+
+            with patch(
+                "aivp.execution.runtime."
+                "time.monotonic",
+                return_value=100.0,
+            ):
+                restored = Runtime(
+                    run_dir,
+                    budgets,
+                    resume=True,
+                    elapsed_before_resume=10.0,
+                )
+
+                with self.assertRaises(
+                    BudgetExceeded
+                ):
+                    restored.consume(
+                        "codex"
+                    )
+
+            self.assertEqual(
+                restored.counters.codex_calls,
+                0,
+            )
+
 
 
 if __name__ == "__main__":

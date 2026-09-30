@@ -11,7 +11,10 @@ from aivp.artifacts.io import (
     dump_json,
     dump_text,
 )
-from aivp.errors import InjectedCrash
+from aivp.errors import (
+    InjectedCrash,
+    StateIntegrityError,
+)
 from aivp.execution.runtime import (
     Counters,
     Runtime,
@@ -68,6 +71,37 @@ class DurableExecution:
             self.resume_checkpoint
             is not None
         )
+
+
+def elapsed_from_checkpoint(
+    checkpoint: Mapping[str, Any],
+) -> float:
+    if "elapsed_seconds" not in checkpoint:
+        raise StateIntegrityError(
+            "Resume checkpoint is missing "
+            "elapsed_seconds"
+        )
+
+    try:
+        elapsed = float(
+            checkpoint["elapsed_seconds"]
+        )
+    except (
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise StateIntegrityError(
+            "Resume checkpoint contains "
+            "invalid elapsed_seconds"
+        ) from exc
+
+    if elapsed < 0:
+        raise StateIntegrityError(
+            "Resume checkpoint contains "
+            "negative elapsed_seconds"
+        )
+
+    return elapsed
 
 
 def counters_from_checkpoint(
@@ -182,6 +216,9 @@ def complete_generation(
         ],
         "counters": dataclasses.asdict(
             runtime.counters
+        ),
+        "elapsed_seconds": (
+            runtime.elapsed_seconds()
         ),
         "model": {
             "provider": (
@@ -328,6 +365,9 @@ def complete_verification(
         ),
         "counters": dataclasses.asdict(
             runtime.counters
+        ),
+        "elapsed_seconds": (
+            runtime.elapsed_seconds()
         ),
     }
 

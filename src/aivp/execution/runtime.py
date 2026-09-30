@@ -57,10 +57,22 @@ class Runtime:
         dry_run: bool = False,
         resume: bool = False,
         counters: Optional[Counters] = None,
+        elapsed_before_resume: float = 0.0,
     ):
         self.run_dir = run_dir
         self.budgets = budgets
         self.counters = counters or Counters()
+
+        self.elapsed_before_resume = float(
+            elapsed_before_resume
+        )
+
+        if self.elapsed_before_resume < 0:
+            raise AIVPError(
+                "Elapsed budget consumption "
+                "cannot be negative"
+            )
+
         self.started = time.monotonic()
         self.dry_run = dry_run
         self.events: List[Dict[str, Any]] = []
@@ -96,12 +108,26 @@ class Runtime:
 
                 self.events = loaded
 
-    def remaining_seconds(self) -> float:
-        used = time.monotonic() - self.started
+    def elapsed_seconds(self) -> float:
+        current_attempt = max(
+            0.0,
+            time.monotonic()
+            - self.started,
+        )
 
+        return (
+            self.elapsed_before_resume
+            + current_attempt
+        )
+
+    def remaining_seconds(self) -> float:
         return max(
             0.0,
-            self.budgets.whole_run_timeout_seconds - used,
+            (
+                self.budgets
+                .whole_run_timeout_seconds
+                - self.elapsed_seconds()
+            ),
         )
 
     def assert_time_budget(self) -> None:
