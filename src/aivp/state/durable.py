@@ -26,6 +26,9 @@ from aivp.repository.git import (
     git,
 )
 from aivp.state.base import DurableStateStore
+from aivp.state.checkpoint import (
+    CHECKPOINT_SCHEMA_VERSION,
+)
 from aivp.state.hashing import (
     sha256_file,
     sha256_json,
@@ -195,6 +198,9 @@ def complete_generation(
     )
 
     checkpoint = {
+        "checkpoint_schema_version": (
+            CHECKPOINT_SCHEMA_VERSION
+        ),
         "state": "GENERATED",
         "attempt": durable.attempt,
         "repo_path": str(
@@ -338,6 +344,9 @@ def complete_verification(
     timestamp = now_iso()
 
     checkpoint = {
+        "checkpoint_schema_version": (
+            CHECKPOINT_SCHEMA_VERSION
+        ),
         "state": "VERIFIED",
         "attempt": durable.attempt,
         "repo_path": str(

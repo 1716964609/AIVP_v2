@@ -16,6 +16,10 @@ from typing import (
 
 from aivp.errors import StateIntegrityError
 
+from aivp.state.checkpoint import (
+    validate_checkpoint_schema_version,
+)
+
 
 SCHEMA_VERSION = 1
 
@@ -579,6 +583,10 @@ class SQLiteStateStore:
                 "Checkpoint payload "
                 "must be a JSON object"
             )
+
+        validate_checkpoint_schema_version(
+            payload
+        )
 
         state = payload.get("state")
 
