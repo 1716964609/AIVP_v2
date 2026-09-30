@@ -60,6 +60,7 @@ from aivp.state.durable import (
 )
 from aivp.state.resume import (
     build_resume_plan,
+    validate_resume_inputs,
     validate_resume_repository,
 )
 from aivp.verification.base import Verifier
@@ -375,6 +376,14 @@ def execute_panel(
                     ),
                 )
 
+                validate_resume_inputs(
+                    task=task,
+                    config=config,
+                    checkpoint=(
+                        durable.resume_checkpoint
+                    ),
+                )
+
                 resume_plan = build_resume_plan(
                     run_id=durable.run_id,
                     checkpoint=(
@@ -437,6 +446,8 @@ def execute_panel(
                         runtime=runtime,
                         repo=repo,
                         prompt=initial_prompt,
+                        task=task,
+                        config=config,
                         model_result=(
                             generation_result
                         ),
@@ -521,6 +532,8 @@ def execute_panel(
                             durable=durable,
                             runtime=runtime,
                             repo=repo,
+                            task=task,
+                            config=config,
                             verification=(
                                 verification
                             ),

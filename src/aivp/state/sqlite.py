@@ -557,6 +557,8 @@ class SQLiteStateStore:
             "run_dir",
             "base_sha",
             "current_diff_hash",
+            "task_hash",
+            "config_hash",
             "counters",
         }
 

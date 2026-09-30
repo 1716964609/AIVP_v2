@@ -130,3 +130,58 @@ def validate_resume_repository(
         raise StateIntegrityError(
             "Resume diff hash mismatch"
         )
+
+
+def validate_resume_inputs(
+    *,
+    task: Mapping[str, Any],
+    config: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+) -> None:
+    from aivp.state.hashing import (
+        sha256_json,
+    )
+
+    expected_task_hash = (
+        checkpoint.get(
+            "task_hash"
+        )
+    )
+
+    expected_config_hash = (
+        checkpoint.get(
+            "config_hash"
+        )
+    )
+
+    if not isinstance(
+        expected_task_hash,
+        str,
+    ):
+        raise StateIntegrityError(
+            "Checkpoint task hash missing"
+        )
+
+    if not isinstance(
+        expected_config_hash,
+        str,
+    ):
+        raise StateIntegrityError(
+            "Checkpoint config hash missing"
+        )
+
+    if (
+        sha256_json(dict(task))
+        != expected_task_hash
+    ):
+        raise StateIntegrityError(
+            "Resume task identity mismatch"
+        )
+
+    if (
+        sha256_json(dict(config))
+        != expected_config_hash
+    ):
+        raise StateIntegrityError(
+            "Resume config identity mismatch"
+        )

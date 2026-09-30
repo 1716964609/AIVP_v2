@@ -8,12 +8,14 @@ from aivp.errors import StateIntegrityError
 from aivp.state.hashing import sha256_file
 from aivp.state.resume import (
     build_resume_plan,
+    validate_resume_inputs,
     validate_resume_repository,
 )
 from aivp.repository.git import (
     capture_diff,
 )
 from aivp.state.hashing import (
+    sha256_json,
     sha256_text,
 )
 
@@ -327,6 +329,77 @@ class ResumePlanTests(unittest.TestCase):
                     repo=repo,
                     checkpoint=checkpoint,
                 )
+
+
+    def test_task_identity_tamper_fails_closed(
+        self,
+    ):
+        original_task = {
+            "task": "original"
+        }
+
+        config = {
+            "mode": "test"
+        }
+
+        checkpoint = {
+            "task_hash": (
+                sha256_json(
+                    original_task
+                )
+            ),
+            "config_hash": (
+                sha256_json(
+                    config
+                )
+            ),
+        }
+
+        with self.assertRaises(
+            StateIntegrityError
+        ):
+            validate_resume_inputs(
+                task={
+                    "task": "tampered"
+                },
+                config=config,
+                checkpoint=checkpoint,
+            )
+
+    def test_config_identity_tamper_fails_closed(
+        self,
+    ):
+        task = {
+            "task": "original"
+        }
+
+        original_config = {
+            "mode": "original"
+        }
+
+        checkpoint = {
+            "task_hash": (
+                sha256_json(
+                    task
+                )
+            ),
+            "config_hash": (
+                sha256_json(
+                    original_config
+                )
+            ),
+        }
+
+        with self.assertRaises(
+            StateIntegrityError
+        ):
+            validate_resume_inputs(
+                task=task,
+                config={
+                    "mode": "tampered"
+                },
+                checkpoint=checkpoint,
+            )
 
 
 if __name__ == "__main__":

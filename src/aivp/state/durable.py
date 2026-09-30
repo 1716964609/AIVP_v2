@@ -104,6 +104,8 @@ def complete_generation(
     runtime: Runtime,
     repo: Path,
     prompt: str,
+    task: Mapping[str, Any],
+    config: Mapping[str, Any],
     model_result: ModelResult,
     base_sha: str,
 ) -> None:
@@ -157,6 +159,12 @@ def complete_generation(
         ),
         "base_sha": base_sha,
         "current_diff_hash": diff_hash,
+        "task_hash": sha256_json(
+            dict(task)
+        ),
+        "config_hash": sha256_json(
+            dict(config)
+        ),
         "artifact_ids": [
             artifact_id
         ],
@@ -214,6 +222,8 @@ def complete_verification(
     durable: DurableExecution,
     runtime: Runtime,
     repo: Path,
+    task: Mapping[str, Any],
+    config: Mapping[str, Any],
     verification: Mapping[str, Any],
 ) -> None:
     verification_path = (
@@ -285,6 +295,12 @@ def complete_verification(
         ),
         "base_sha": base_sha,
         "current_diff_hash": diff_hash,
+        "task_hash": sha256_json(
+            dict(task)
+        ),
+        "config_hash": sha256_json(
+            dict(config)
+        ),
         "verification_artifact_id": (
             artifact_id
         ),
