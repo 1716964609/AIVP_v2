@@ -2,7 +2,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Protocol, Sequence
 
-from aivp.legacy.orchestrator_v1 import AIVPError, dump_json
+from aivp.artifacts.io import dump_json
+from aivp.errors import AIVPError
 
 
 class VerificationRuntime(Protocol):
