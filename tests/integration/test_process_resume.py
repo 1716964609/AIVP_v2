@@ -1,0 +1,246 @@
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+from pathlib import Path
+
+
+class ProcessResumeTests(
+    unittest.TestCase
+):
+    def test_hard_crash_after_generation_resumes_without_regeneration(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            repo = root / "repo"
+            repo.mkdir()
+
+            subprocess.run(
+                ["git", "init"],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "test@example.com",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            (
+                repo / "README.md"
+            ).write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            env = os.environ.copy()
+
+            src = (
+                Path(__file__)
+                .resolve()
+                .parents[2]
+                / "src"
+            )
+
+            env["PYTHONPATH"] = str(src)
+
+            env[
+                "AIVP_ENABLE_FAULT_INJECTION"
+            ] = "1"
+
+            env[
+                "AIVP_HARD_CRASH_AFTER_STATE"
+            ] = "GENERATED"
+
+            first = subprocess.run(
+                [
+                    sys.executable,
+                    str(
+                        Path(__file__)
+                        .with_name(
+                            "process_resume_driver.py"
+                        )
+                    ),
+                    "start",
+                    str(root),
+                ],
+                env=env,
+            )
+
+            self.assertEqual(
+                first.returncode,
+                97,
+            )
+
+            self.assertTrue(
+                (
+                    repo
+                    / "generated.txt"
+                ).exists()
+            )
+
+            events_before = json.loads(
+                (
+                    run_dir
+                    / "events.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            command_starts_before = [
+                event
+                for event in events_before
+                if event.get("kind")
+                == "command_start"
+            ]
+
+            resume_env = (
+                os.environ.copy()
+            )
+
+            resume_env[
+                "PYTHONPATH"
+            ] = str(src)
+
+            second = subprocess.run(
+                [
+                    sys.executable,
+                    str(
+                        Path(__file__)
+                        .with_name(
+                            "process_resume_driver.py"
+                        )
+                    ),
+                    "resume",
+                    str(root),
+                ],
+                env=resume_env,
+            )
+
+            self.assertEqual(
+                second.returncode,
+                0,
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "AUTO_FINISHED",
+            )
+
+            # Process #1 consumed one Codex call
+            # for Generate. Resume must NOT generate
+            # again; only the final Risk call adds
+            # the second Codex call.
+            self.assertEqual(
+                status["metrics"][
+                    "codex_calls"
+                ],
+                2,
+            )
+
+            self.assertEqual(
+                status["metrics"][
+                    "claude_calls"
+                ],
+                1,
+            )
+
+            events_after = json.loads(
+                (
+                    run_dir
+                    / "events.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertGreater(
+                len(events_after),
+                len(events_before),
+            )
+
+            self.assertEqual(
+                sum(
+                    1
+                    for event
+                    in events_after
+                    if (
+                        event.get("kind")
+                        == "run_start"
+                    )
+                ),
+                1,
+            )
+
+            self.assertEqual(
+                sum(
+                    1
+                    for event
+                    in events_after
+                    if (
+                        event.get("kind")
+                        == "run_resume"
+                    )
+                ),
+                1,
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

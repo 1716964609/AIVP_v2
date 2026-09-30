@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 import tempfile
 import unittest
@@ -166,6 +167,40 @@ class RepositoryReportingCompatibilityTests(
 
             with repo_lock(repo):
                 pass
+
+    def test_repo_lock_ignores_stale_file_without_owner(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+
+            key = hashlib.sha256(
+                str(
+                    repo.resolve()
+                ).encode()
+            ).hexdigest()[:16]
+
+            lock_path = (
+                Path(
+                    tempfile.gettempdir()
+                )
+                / f"aivp-{key}.lock"
+            )
+
+            lock_path.write_text(
+                "pid=999999\n"
+                f"repo={repo}\n",
+                encoding="utf-8",
+            )
+
+            try:
+                with repo_lock(repo):
+                    pass
+
+            finally:
+                lock_path.unlink(
+                    missing_ok=True
+                )
 
     def test_human_packet_matches_legacy(self):
         kwargs = {

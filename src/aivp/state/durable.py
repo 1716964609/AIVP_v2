@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,28 @@ from aivp.state.hashing import (
     sha256_json,
     sha256_text,
 )
+
+
+def _hard_crash_if_requested(
+    state: str,
+) -> None:
+    enabled = os.environ.get(
+        "AIVP_ENABLE_FAULT_INJECTION"
+    )
+
+    requested = os.environ.get(
+        "AIVP_HARD_CRASH_AFTER_STATE"
+    )
+
+    if (
+        enabled == "1"
+        and requested == state
+    ):
+        # Intentional abrupt process death:
+        # no exception unwinding,
+        # no finally,
+        # no context-manager cleanup.
+        os._exit(97)
 
 
 @dataclass
@@ -206,6 +229,10 @@ def complete_generation(
         checkpoint_payload=checkpoint,
     )
 
+    _hard_crash_if_requested(
+        "GENERATED"
+    )
+
     if (
         durable.fault_after_state
         == "GENERATED"
@@ -331,6 +358,10 @@ def complete_verification(
         retryable=False,
         checkpoint_state="VERIFIED",
         checkpoint_payload=checkpoint,
+    )
+
+    _hard_crash_if_requested(
+        "VERIFIED"
     )
 
     if (
