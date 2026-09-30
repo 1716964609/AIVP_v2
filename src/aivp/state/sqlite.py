@@ -140,6 +140,169 @@ class SQLiteStateStore:
 
         self._migrate()
 
+    def record_artifact(
+        self,
+        *,
+        artifact_id: str,
+        run_id: str,
+        artifact_type: str,
+        path: Path,
+        sha256: str,
+        size_bytes: int,
+        sensitive: bool = False,
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO artifacts(
+                artifact_id,
+                run_id,
+                type,
+                path,
+                sha256,
+                size_bytes,
+                sensitive,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                artifact_id,
+                run_id,
+                artifact_type,
+                str(path),
+                sha256,
+                size_bytes,
+                int(sensitive),
+                _now_iso(),
+            ),
+        )
+
+        self.connection.commit()
+
+    def load_artifact(
+        self,
+        artifact_id: str,
+    ) -> Optional[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT *
+            FROM artifacts
+            WHERE artifact_id = ?
+            """,
+            (artifact_id,),
+        ).fetchone()
+
+    def complete_step(
+        self,
+        *,
+        step_id: str,
+        run_id: str,
+        step_type: str,
+        attempt: int,
+        input_hash: Optional[str],
+        output_hash: Optional[str],
+        started_at: str,
+        finished_at: str,
+        retryable: bool,
+        checkpoint_state: str,
+        checkpoint_payload: Dict[str, Any],
+    ) -> None:
+        now = _now_iso()
+
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO steps(
+                    step_id,
+                    run_id,
+                    step_type,
+                    attempt,
+                    status,
+                    input_hash,
+                    output_hash,
+                    started_at,
+                    finished_at,
+                    error_class,
+                    retryable
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(step_id) DO UPDATE SET
+                    status = excluded.status,
+                    input_hash = excluded.input_hash,
+                    output_hash = excluded.output_hash,
+                    finished_at = excluded.finished_at,
+                    error_class = excluded.error_class,
+                    retryable = excluded.retryable
+                """,
+                (
+                    step_id,
+                    run_id,
+                    step_type,
+                    attempt,
+                    "SUCCEEDED",
+                    input_hash,
+                    output_hash,
+                    started_at,
+                    finished_at,
+                    None,
+                    int(retryable),
+                ),
+            )
+
+            self.connection.execute(
+                """
+                UPDATE runs
+                SET current_state = ?,
+                    status = ?
+                WHERE run_id = ?
+                """,
+                (
+                    checkpoint_state,
+                    "RUNNING",
+                    run_id,
+                ),
+            )
+
+            self.connection.execute(
+                """
+                INSERT INTO checkpoints(
+                    checkpoint_id,
+                    run_id,
+                    state,
+                    payload_json,
+                    created_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    run_id,
+                    checkpoint_state,
+                    json.dumps(
+                        checkpoint_payload,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                    now,
+                ),
+            )
+
+    def load_step(
+        self,
+        step_id: str,
+    ) -> Optional[sqlite3.Row]:
+        return self.connection.execute(
+            """
+            SELECT *
+            FROM steps
+            WHERE step_id = ?
+            """,
+            (step_id,),
+        ).fetchone()
+
+
+
+
     def _migrate(self) -> None:
         version = self.connection.execute(
             "PRAGMA user_version"

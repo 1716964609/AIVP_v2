@@ -14,3 +14,7 @@ class CommandFailed(AIVPError):
     ):
         super().__init__(message)
         self.returncode = returncode
+
+
+class StateIntegrityError(AIVPError):
+    pass
