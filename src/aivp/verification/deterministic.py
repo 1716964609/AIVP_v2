@@ -108,3 +108,25 @@ def verification_summary(
         "\n\n".join(lines)
         or "No deterministic gates configured."
     )
+
+
+class DeterministicVerifier:
+    def __init__(
+        self,
+        runtime: VerificationRuntime,
+    ):
+        self.runtime = runtime
+
+    def verify(
+        self,
+        *,
+        repo: Path,
+        config: Dict[str, Any],
+        phase: str,
+    ) -> Dict[str, Any]:
+        return run_verification(
+            self.runtime,
+            repo,
+            config,
+            phase,
+        )
