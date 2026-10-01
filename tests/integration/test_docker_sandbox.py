@@ -264,5 +264,151 @@ cat /tmp/aivp-tmp-test
             )
 
 
+    def test_kernel_security_state_matches_policy(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = """
+set -eu
+
+test "$(
+    awk '/^CapPrm:/ {print $2}' \
+        /proc/self/status
+)" = "0000000000000000"
+
+test "$(
+    awk '/^CapEff:/ {print $2}' \
+        /proc/self/status
+)" = "0000000000000000"
+
+test "$(
+    awk '/^NoNewPrivs:/ {print $2}' \
+        /proc/self/status
+)" = "1"
+
+test "$(
+    cat /sys/fs/cgroup/pids.max
+)" = "128"
+
+test "$(
+    cat /sys/fs/cgroup/memory.max
+)" = "536870912"
+
+test "$(
+    cat /sys/fs/cgroup/cpu.max
+)" = "100000 100000"
+
+printf 'security-state-ok\\n'
+"""
+
+            cp = self.sandbox().run(
+                workspace=Path(tmp),
+                command=[
+                    "sh",
+                    "-lc",
+                    script,
+                ],
+                timeout_seconds=10,
+            )
+
+            self.assertEqual(
+                cp.returncode,
+                0,
+                msg=cp.stderr,
+            )
+
+            self.assertEqual(
+                cp.stdout,
+                "security-state-ok\n",
+            )
+
+    def test_escape_surfaces_are_blocked(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = """
+if touch /etc/aivp-breakout 2>/dev/null; then
+    exit 51
+fi
+
+if [ -e /var/run/docker.sock ]; then
+    exit 52
+fi
+
+if wget \
+    -q \
+    -T 2 \
+    -O /tmp/network-proof \
+    http://1.1.1.1 \
+    2>/dev/null
+then
+    exit 53
+fi
+
+printf 'escape-blocked\\n'
+"""
+
+            cp = self.sandbox().run(
+                workspace=Path(tmp),
+                command=[
+                    "sh",
+                    "-lc",
+                    script,
+                ],
+                timeout_seconds=10,
+            )
+
+            self.assertEqual(
+                cp.returncode,
+                0,
+                msg=cp.stderr,
+            )
+
+            self.assertEqual(
+                cp.stdout,
+                "escape-blocked\n",
+            )
+
+    def test_tmpfs_is_writable_but_noexec(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = """
+printf '#!/bin/sh\\nexit 0\\n' \
+    > /tmp/aivp-exec-test
+
+chmod +x /tmp/aivp-exec-test
+
+if /tmp/aivp-exec-test 2>/dev/null; then
+    exit 61
+fi
+
+test -f /tmp/aivp-exec-test
+
+printf 'tmpfs-noexec-ok\\n'
+"""
+
+            cp = self.sandbox().run(
+                workspace=Path(tmp),
+                command=[
+                    "sh",
+                    "-lc",
+                    script,
+                ],
+                timeout_seconds=10,
+            )
+
+            self.assertEqual(
+                cp.returncode,
+                0,
+                msg=cp.stderr,
+            )
+
+            self.assertEqual(
+                cp.stdout,
+                "tmpfs-noexec-ok\n",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
