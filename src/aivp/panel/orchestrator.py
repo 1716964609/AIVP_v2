@@ -285,11 +285,26 @@ def execute_panel(
     verifier: Verifier,
     risk_engine: RiskEngine,
     artifacts: ArtifactRegistry,
+    canonical_repo: Optional[Path] = None,
     durable: Optional[
         DurableExecution
     ] = None,
 ) -> Path:
     run_dir = runtime.run_dir
+
+    execution_repo = (
+        repo.expanduser().resolve()
+    )
+
+    canonical_repo = (
+        canonical_repo
+        .expanduser()
+        .resolve()
+        if canonical_repo is not None
+        else execution_repo
+    )
+
+    repo = execution_repo
 
     is_resume = (
         durable is not None
@@ -304,6 +319,9 @@ def execute_panel(
         ),
         version=COMPAT_VERSION,
         repo=str(repo),
+        canonical_repo=str(
+            canonical_repo
+        ),
         dry_run=runtime.dry_run,
     )
 
@@ -356,8 +374,13 @@ def execute_panel(
         str
     ] = None
 
-    with repo_lock(repo):
-        assert_git_repo(repo)
+    with repo_lock(canonical_repo):
+        assert_git_repo(
+            canonical_repo
+        )
+
+        if repo != canonical_repo:
+            assert_git_repo(repo)
 
         resume_plan = None
 
@@ -397,7 +420,9 @@ def execute_panel(
                     ),
                 )
             else:
-                assert_clean_repo(repo)
+                assert_clean_repo(
+                    canonical_repo
+                )
 
         try:
             if resume_plan is None:

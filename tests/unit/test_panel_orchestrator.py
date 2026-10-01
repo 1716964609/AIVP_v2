@@ -290,6 +290,119 @@ class HarnessPanelTests(
                 1,
             )
 
+    def test_execution_repo_isolated_from_canonical_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            canonical_repo = self.make_repo(root)
+
+            execution_repo = (
+                root / "execution"
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(execution_repo),
+                    "HEAD",
+                ],
+                cwd=canonical_repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            runtime = self.make_runtime(root)
+
+            generator = EditingFakeModel(
+                runtime,
+                "codex",
+                ["generated"],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [REVIEW_LOW],
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [RISK_LOW],
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=execution_repo,
+                canonical_repo=canonical_repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk,
+                verifier=FakeVerifier(
+                    [passed()]
+                ),
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            self.assertFalse(
+                (
+                    canonical_repo
+                    / "generated.txt"
+                ).exists()
+            )
+
+            self.assertTrue(
+                (
+                    execution_repo
+                    / "generated.txt"
+                ).exists()
+            )
+
+            canonical_status = subprocess.run(
+                [
+                    "git",
+                    "status",
+                    "--short",
+                ],
+                cwd=canonical_repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            ).stdout
+
+            self.assertEqual(
+                canonical_status,
+                "",
+            )
+
+            self.assertEqual(
+                generator.requests[0].repo,
+                execution_repo.resolve(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "AUTO_FINISHED",
+            )
+
     def test_deterministic_failure_repairs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
