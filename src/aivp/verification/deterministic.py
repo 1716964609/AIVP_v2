@@ -7,6 +7,12 @@ from aivp.containment.docker_sandbox import (
     DockerSandbox,
 )
 from aivp.errors import AIVPError
+from aivp.policy.capability import (
+    Capability,
+    CapabilityRequest,
+    StaticCapabilityPolicy,
+    v2_default_policy,
+)
 
 
 class VerificationRuntime(Protocol):
@@ -88,6 +94,9 @@ def run_verification(
     repo: Path,
     config: Dict[str, Any],
     phase: str,
+    policy: Optional[
+        StaticCapabilityPolicy
+    ] = None,
 ) -> Dict[str, Any]:
     results = []
     all_required_pass = True
@@ -100,6 +109,10 @@ def run_verification(
             "note": "No verification commands configured",
         }
 
+    effective_policy = (
+        policy or v2_default_policy()
+    )
+
     for i, spec in enumerate(commands):
         name = str(spec.get("name", f"gate-{i+1}"))
         argv = spec.get("argv")
@@ -111,6 +124,19 @@ def run_verification(
 
         required = bool(spec.get("required", True))
         timeout = int(spec.get("timeout_seconds", 180))
+
+        effective_policy.authorize(
+            CapabilityRequest(
+                capability=(
+                    Capability.C1_LOCAL_MUTATE
+                ),
+                actor="verifier",
+                action="verification_exec",
+                target=str(
+                    repo.expanduser().resolve()
+                ),
+            )
+        )
 
         cp = runtime.command(
             argv,
@@ -177,9 +203,15 @@ class DeterministicVerifier:
         sandbox: Optional[
             DockerSandbox
         ] = None,
+        policy: Optional[
+            StaticCapabilityPolicy
+        ] = None,
     ):
         self.runtime = runtime
         self.sandbox = sandbox
+        self.policy = (
+            policy or v2_default_policy()
+        )
 
     def verify(
         self,
@@ -206,4 +238,5 @@ class DeterministicVerifier:
             repo,
             config,
             phase,
+            policy=self.policy,
         )
