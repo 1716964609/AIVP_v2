@@ -24,3 +24,11 @@ class StateIntegrityError(AIVPError):
 class InjectedCrash(AIVPError):
     """Intentional crash used for durable-execution fault injection."""
     pass
+
+
+class PolicyDenied(AIVPError):
+    pass
+
+
+class HumanApprovalRequired(AIVPError):
+    pass
