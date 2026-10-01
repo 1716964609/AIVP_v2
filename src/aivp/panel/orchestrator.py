@@ -41,6 +41,12 @@ from aivp.panel.reporting import (
     write_metrics,
 )
 from aivp.panel.task import render_task
+from aivp.policy.capability import (
+    Capability,
+    CapabilityRequest,
+    StaticCapabilityPolicy,
+    v2_default_policy,
+)
 from aivp.repository.diff import truncate_diff
 from aivp.repository.git import (
     assert_clean_repo,
@@ -112,7 +118,19 @@ def _invoke_edit(
     prompt: str,
     log_stem: str,
     role: str,
+    policy: StaticCapabilityPolicy,
 ) -> ModelResult:
+    policy.authorize(
+        CapabilityRequest(
+            capability=(
+                Capability.C1_LOCAL_MUTATE
+            ),
+            actor="codex",
+            action=role,
+            target=str(repo),
+        )
+    )
+
     return adapter.invoke(
         ModelRequest(
             role=role,
@@ -137,7 +155,19 @@ def _invoke_review(
     diff_text: str,
     verification: Dict[str, Any],
     review_index: int,
+    policy: StaticCapabilityPolicy,
 ) -> Dict[str, Any]:
+    policy.authorize(
+        CapabilityRequest(
+            capability=(
+                Capability.C0_OBSERVE
+            ),
+            actor="claude",
+            action="review",
+            target=str(repo),
+        )
+    )
+
     prompt = review_prompt(
         task_text,
         diff_text,
@@ -221,7 +251,19 @@ def _invoke_risk(
     repo: Path,
     task_text: str,
     diff_text: str,
+    policy: StaticCapabilityPolicy,
 ) -> Dict[str, Any]:
+    policy.authorize(
+        CapabilityRequest(
+            capability=(
+                Capability.C0_OBSERVE
+            ),
+            actor="codex",
+            action="risk",
+            target=str(repo),
+        )
+    )
+
     result = adapter.invoke(
         ModelRequest(
             role="risk",
@@ -289,8 +331,14 @@ def execute_panel(
     durable: Optional[
         DurableExecution
     ] = None,
+    policy: Optional[
+        StaticCapabilityPolicy
+    ] = None,
 ) -> Path:
     run_dir = runtime.run_dir
+
+    if policy is None:
+        policy = v2_default_policy()
 
     execution_repo = (
         repo.expanduser().resolve()
@@ -460,6 +508,7 @@ def execute_panel(
                             "codex-generate"
                         ),
                         role="generator",
+                        policy=policy,
                     )
                 )
 
@@ -607,6 +656,7 @@ def execute_panel(
                         prompt=prompt,
                         log_stem=stem,
                         role="fixer",
+                        policy=policy,
                     )
 
                     continue
@@ -633,6 +683,7 @@ def execute_panel(
                     diff_text=diff_text,
                     verification=verification,
                     review_index=review_index,
+                    policy=policy,
                 )
 
                 review_index += 1
@@ -684,6 +735,7 @@ def execute_panel(
                     prompt=prompt,
                     log_stem=stem,
                     role="fixer",
+                    policy=policy,
                 )
 
             if escalation_reason is None:
@@ -725,6 +777,7 @@ def execute_panel(
                     repo=repo,
                     task_text=task_text,
                     diff_text=final_diff,
+                    policy=policy,
                 )
 
                 assessed = (
