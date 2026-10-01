@@ -121,6 +121,46 @@ TRANSITIONS: FrozenSet[Transition] = frozenset(
             RunState.RISK_ASSESSED,
             RunState.DENIED,
         ),
+        Transition(
+            RunState.GENERATING,
+            RunState.HUMAN_REQUIRED,
+        ),
+        Transition(
+            RunState.GENERATING,
+            RunState.DENIED,
+        ),
+        Transition(
+            RunState.VERIFYING,
+            RunState.HUMAN_REQUIRED,
+        ),
+        Transition(
+            RunState.VERIFYING,
+            RunState.DENIED,
+        ),
+        Transition(
+            RunState.REPAIRING,
+            RunState.HUMAN_REQUIRED,
+        ),
+        Transition(
+            RunState.REPAIRING,
+            RunState.DENIED,
+        ),
+        Transition(
+            RunState.REVIEWING,
+            RunState.HUMAN_REQUIRED,
+        ),
+        Transition(
+            RunState.REVIEWING,
+            RunState.DENIED,
+        ),
+        Transition(
+            RunState.RISK_ASSESSING,
+            RunState.HUMAN_REQUIRED,
+        ),
+        Transition(
+            RunState.RISK_ASSESSING,
+            RunState.DENIED,
+        ),
     }
 )
 
