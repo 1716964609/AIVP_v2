@@ -9,6 +9,9 @@ from typing import Any, Dict, Optional
 from aivp.artifacts.registry import (
     ArtifactRegistry,
 )
+from aivp.containment.worktree import (
+    create_run_worktree,
+)
 from aivp.errors import AIVPError
 from aivp.execution.runtime import Runtime
 from aivp.models.claude_adapter import (
@@ -55,6 +58,7 @@ def _execute(
     *,
     runtime: Runtime,
     repo: Path,
+    canonical_repo: Path,
     task: Dict[str, Any],
     config: Dict[str, Any],
     durable: Optional[
@@ -87,6 +91,7 @@ def _execute(
     return execute_panel(
         runtime=runtime,
         repo=repo,
+        canonical_repo=canonical_repo,
         task=task,
         config=config,
         generator=generator,
@@ -151,10 +156,18 @@ def run_new(
         return _execute(
             runtime=runtime,
             repo=repo,
+            canonical_repo=repo,
             task=task,
             config=config,
             durable=None,
         )
+
+    worktree = create_run_worktree(
+        canonical_repo=repo,
+        worktree_path=(
+            run_dir / "worktree"
+        ),
+    )
 
     state_db = (
         state_db
@@ -172,7 +185,10 @@ def run_new(
 
         return _execute(
             runtime=runtime,
-            repo=repo,
+            repo=worktree.path,
+            canonical_repo=(
+                worktree.canonical_repo
+            ),
             task=task,
             config=config,
             durable=durable,
@@ -268,6 +284,7 @@ def resume_run(
         return _execute(
             runtime=runtime,
             repo=repo,
+            canonical_repo=repo,
             task=task,
             config=config,
             durable=durable,
