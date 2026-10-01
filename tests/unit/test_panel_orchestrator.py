@@ -991,6 +991,170 @@ class HarnessPanelTests(
             finally:
                 second_store.close()
 
+    def test_forbidden_prod_diff_blocks_verifier_and_is_reported(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            runtime = Runtime(
+                run_dir,
+                Budgets(
+                    max_fix_iterations=0,
+                ),
+            )
+
+            class ForbiddenProdModel(
+                FakeModel
+            ):
+                def invoke(
+                    self,
+                    request: ModelRequest,
+                ) -> ModelResult:
+                    if (
+                        request.role
+                        == "generator"
+                    ):
+                        target = (
+                            request.repo
+                            / "infra"
+                            / "prod"
+                            / "main.tf"
+                        )
+
+                        target.parent.mkdir(
+                            parents=True,
+                            exist_ok=True,
+                        )
+
+                        target.write_text(
+                            "resource {}\n",
+                            encoding="utf-8",
+                        )
+
+                    return super().invoke(
+                        request
+                    )
+
+            generator = ForbiddenProdModel(
+                runtime,
+                "codex",
+                [""],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [],
+            )
+
+            risk_judge = FakeModel(
+                runtime,
+                "codex",
+                [],
+            )
+
+            verifier = FakeVerifier(
+                [passed()]
+            )
+
+            result = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                canonical_repo=repo,
+                task={
+                    "task": (
+                        "Attempt forbidden "
+                        "production change"
+                    )
+                },
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk_judge,
+                verifier=verifier,
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+                durable=None,
+            )
+
+            self.assertEqual(
+                result,
+                run_dir,
+            )
+
+            self.assertEqual(
+                verifier.calls,
+                0,
+            )
+
+            self.assertEqual(
+                reviewer.requests,
+                [],
+            )
+
+            self.assertEqual(
+                risk_judge.requests,
+                [],
+            )
+
+            guard_path = (
+                run_dir
+                / "round-0.diff-guard.json"
+            )
+
+            self.assertTrue(
+                guard_path.exists()
+            )
+
+            guard = json.loads(
+                guard_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                guard["passed"]
+            )
+
+            self.assertEqual(
+                guard[
+                    "forbidden_matches"
+                ][0]["path"],
+                "infra/prod/main.tf",
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertIn(
+                "diff guard blocked change",
+                status["reason"],
+            )
+
+            self.assertIn(
+                "infra/prod/main.tf",
+                status["reason"],
+            )
+
+
 
 if __name__ == "__main__":
     unittest.main()

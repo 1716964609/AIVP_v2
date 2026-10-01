@@ -76,6 +76,9 @@ from aivp.verification.base import Verifier
 from aivp.verification.deterministic import (
     DeterministicVerifier,
 )
+from aivp.verification.diff_guard import (
+    evaluate_diff_guard,
+)
 
 
 COMPAT_VERSION = "1.0.0"
@@ -595,26 +598,71 @@ def execute_panel(
                 if skip_verification_once:
                     skip_verification_once = False
                 else:
-                    verification = verifier.verify(
-                        repo=repo,
-                        config=config,
-                        phase=phase,
+                    diff_guard = (
+                        evaluate_diff_guard(
+                            repo,
+                            config,
+                        )
                     )
 
-                    if (
-                        verification["passed"]
-                        and durable is not None
-                    ):
-                        complete_verification(
-                            durable=durable,
-                            runtime=runtime,
-                            repo=repo,
-                            task=task,
-                            config=config,
-                            verification=(
-                                verification
+                    _write_json(
+                        artifacts,
+                        f"{phase}-diff-guard",
+                        run_dir
+                        / f"{phase}.diff-guard.json",
+                        diff_guard,
+                    )
+
+                    if not diff_guard["passed"]:
+                        verification = {
+                            "passed": False,
+                            "results": [
+                                {
+                                    "name": (
+                                        "diff-guard"
+                                    ),
+                                    "argv": [],
+                                    "required": True,
+                                    "returncode": 1,
+                                    "passed": False,
+                                    "stdout_tail": "",
+                                    "stderr_tail": (
+                                        "\n".join(
+                                            diff_guard[
+                                                "violations"
+                                            ]
+                                        )
+                                    ),
+                                }
+                            ],
+                            "diff_guard": (
+                                diff_guard
                             ),
+                        }
+
+                    else:
+                        verification = (
+                            verifier.verify(
+                                repo=repo,
+                                config=config,
+                                phase=phase,
+                            )
                         )
+
+                        if (
+                            verification["passed"]
+                            and durable is not None
+                        ):
+                            complete_verification(
+                                durable=durable,
+                                runtime=runtime,
+                                repo=repo,
+                                task=task,
+                                config=config,
+                                verification=(
+                                    verification
+                                ),
+                            )
 
                 if not verification[
                     "passed"
@@ -625,11 +673,42 @@ def execute_panel(
                         >= runtime.budgets
                         .max_fix_iterations
                     ):
-                        escalation_reason = (
-                            "deterministic gates "
-                            "did not pass within "
-                            "fix budget"
+                        diff_guard_result = (
+                            verification.get(
+                                "diff_guard"
+                            )
                         )
+
+                        if diff_guard_result:
+                            violations = (
+                                diff_guard_result.get(
+                                    "violations",
+                                    [],
+                                )
+                            )
+
+                            escalation_reason = (
+                                "diff guard blocked "
+                                "change"
+                            )
+
+                            if violations:
+                                escalation_reason += (
+                                    ": "
+                                    + "; ".join(
+                                        str(value)
+                                        for value
+                                        in violations
+                                    )
+                                )
+
+                        else:
+                            escalation_reason = (
+                                "deterministic gates "
+                                "did not pass within "
+                                "fix budget"
+                            )
+
                         break
 
                     runtime.counters.fix_iterations += 1
