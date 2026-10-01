@@ -523,5 +523,262 @@ class ProcessResumeTests(
 
 
 
+    def test_application_worktree_survives_hard_crash_and_resumes(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            repo = root / "repo"
+            repo.mkdir()
+
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "test@example.com",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            (
+                repo / "README.md"
+            ).write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            src = (
+                Path(__file__)
+                .resolve()
+                .parents[2]
+                / "src"
+            )
+
+            driver = (
+                Path(__file__)
+                .with_name(
+                    "application_process_resume_driver.py"
+                )
+            )
+
+            run_id = (
+                "application-process-resume-test"
+            )
+
+            run_dir = (
+                root
+                / "reports"
+                / run_id
+            )
+
+            worktree = (
+                run_dir
+                / "worktree"
+            )
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = str(src)
+
+            env[
+                "AIVP_ENABLE_FAULT_INJECTION"
+            ] = "1"
+
+            env[
+                "AIVP_HARD_CRASH_AFTER_STATE"
+            ] = "GENERATED"
+
+            first = subprocess.run(
+                [
+                    sys.executable,
+                    str(driver),
+                    "start",
+                    str(root),
+                ],
+                env=env,
+            )
+
+            self.assertEqual(
+                first.returncode,
+                97,
+            )
+
+            self.assertTrue(
+                worktree.exists()
+            )
+
+            self.assertTrue(
+                (
+                    worktree
+                    / "generated.txt"
+                ).exists()
+            )
+
+            self.assertFalse(
+                (
+                    repo
+                    / "generated.txt"
+                ).exists()
+            )
+
+            canonical_status = subprocess.run(
+                [
+                    "git",
+                    "status",
+                    "--short",
+                ],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            ).stdout
+
+            self.assertEqual(
+                canonical_status,
+                "",
+            )
+
+            db_path = root / "state.db"
+
+            with sqlite3.connect(
+                db_path
+            ) as connection:
+                row = connection.execute(
+                    """
+                    SELECT payload_json
+                    FROM checkpoints
+                    WHERE run_id = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    (run_id,),
+                ).fetchone()
+
+            self.assertIsNotNone(
+                row
+            )
+
+            checkpoint = json.loads(
+                row[0]
+            )
+
+            self.assertEqual(
+                checkpoint["repo_path"],
+                str(
+                    worktree.resolve()
+                ),
+            )
+
+            self.assertEqual(
+                checkpoint[
+                    "canonical_repo_path"
+                ],
+                str(
+                    repo.resolve()
+                ),
+            )
+
+            resume_env = os.environ.copy()
+            resume_env[
+                "PYTHONPATH"
+            ] = str(src)
+
+            second = subprocess.run(
+                [
+                    sys.executable,
+                    str(driver),
+                    "resume",
+                    str(root),
+                ],
+                env=resume_env,
+            )
+
+            self.assertEqual(
+                second.returncode,
+                0,
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "AUTO_FINISHED",
+            )
+
+            self.assertTrue(
+                (
+                    worktree
+                    / "generated.txt"
+                ).exists()
+            )
+
+            self.assertFalse(
+                (
+                    repo
+                    / "generated.txt"
+                ).exists()
+            )
+
+            canonical_status = subprocess.run(
+                [
+                    "git",
+                    "status",
+                    "--short",
+                ],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            ).stdout
+
+            self.assertEqual(
+                canonical_status,
+                "",
+            )
+
 if __name__ == "__main__":
     unittest.main()
