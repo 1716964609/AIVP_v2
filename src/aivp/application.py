@@ -21,7 +21,10 @@ from aivp.models.claude_adapter import (
 from aivp.models.codex_adapter import (
     CodexAdapter,
 )
-from aivp.panel.config import budgets_from
+from aivp.panel.config import (
+    budgets_from,
+    verification_sandbox_from,
+)
 from aivp.panel.orchestrator import (
     execute_panel,
 )
@@ -82,7 +85,12 @@ def _execute(
     )
 
     verifier = DeterministicVerifier(
-        runtime
+        runtime,
+        sandbox=(
+            verification_sandbox_from(
+                config
+            )
+        ),
     )
 
     risk_engine = (

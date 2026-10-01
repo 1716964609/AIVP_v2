@@ -3,6 +3,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Protocol, Sequence
 
 from aivp.artifacts.io import dump_json
+from aivp.containment.docker_sandbox import (
+    DockerSandbox,
+)
 from aivp.errors import AIVPError
 
 
@@ -21,6 +24,63 @@ class VerificationRuntime(Protocol):
         check: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         ...
+
+
+
+class _SandboxedVerificationRuntime:
+    def __init__(
+        self,
+        runtime: VerificationRuntime,
+        sandbox: DockerSandbox,
+        workspace: Path,
+    ):
+        self.runtime = runtime
+        self.sandbox = sandbox
+        self.workspace = (
+            workspace
+            .expanduser()
+            .resolve()
+        )
+        self.run_dir = runtime.run_dir
+
+    def command(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path,
+        timeout_seconds: int,
+        log_stem: str,
+        stdin_text: Optional[str] = None,
+        actor: Optional[str] = None,
+        check: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        requested_cwd = (
+            cwd.expanduser().resolve()
+        )
+
+        if requested_cwd != self.workspace:
+            raise AIVPError(
+                "Sandbox verification cwd "
+                "must equal execution workspace"
+            )
+
+        docker_argv = (
+            self.sandbox.build_argv(
+                workspace=self.workspace,
+                command=argv,
+            )
+        )
+
+        return self.runtime.command(
+            docker_argv,
+            cwd=self.workspace,
+            timeout_seconds=timeout_seconds,
+            log_stem=log_stem,
+            stdin_text=stdin_text,
+            actor=actor,
+            check=check,
+        )
+
 
 
 def run_verification(
@@ -114,8 +174,12 @@ class DeterministicVerifier:
     def __init__(
         self,
         runtime: VerificationRuntime,
+        sandbox: Optional[
+            DockerSandbox
+        ] = None,
     ):
         self.runtime = runtime
+        self.sandbox = sandbox
 
     def verify(
         self,
@@ -124,8 +188,21 @@ class DeterministicVerifier:
         config: Dict[str, Any],
         phase: str,
     ) -> Dict[str, Any]:
+        runtime: VerificationRuntime = (
+            self.runtime
+        )
+
+        if self.sandbox is not None:
+            runtime = (
+                _SandboxedVerificationRuntime(
+                    self.runtime,
+                    self.sandbox,
+                    repo,
+                )
+            )
+
         return run_verification(
-            self.runtime,
+            runtime,
             repo,
             config,
             phase,
