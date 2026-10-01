@@ -113,8 +113,7 @@ class DockerSandboxTests(
                     (
                         "type=bind,"
                         f"src={workspace},"
-                        "dst=/workspace,"
-                        "rw"
+                        "dst=/workspace"
                     )
                 ],
             )

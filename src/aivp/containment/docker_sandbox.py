@@ -68,8 +68,7 @@ class DockerSandbox:
         mount = (
             "type=bind,"
             f"src={workspace},"
-            "dst=/workspace,"
-            "rw"
+            "dst=/workspace"
         )
 
         tmpfs = (
