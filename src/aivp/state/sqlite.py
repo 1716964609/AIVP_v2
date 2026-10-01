@@ -272,6 +272,8 @@ class SQLiteStateStore:
         artifacts: Sequence[
             Mapping[str, Any]
         ] = (),
+        run_status: str = "RUNNING",
+        run_finished_at: Optional[str] = None,
     ) -> None:
         now = _now_iso()
 
@@ -357,12 +359,17 @@ class SQLiteStateStore:
                 """
                 UPDATE runs
                 SET current_state = ?,
-                    status = ?
+                    status = ?,
+                    finished_at = COALESCE(
+                        ?,
+                        finished_at
+                    )
                 WHERE run_id = ?
                 """,
                 (
                     checkpoint_state,
-                    "RUNNING",
+                    run_status,
+                    run_finished_at,
                     run_id,
                 ),
             )

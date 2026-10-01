@@ -5,6 +5,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from aivp.errors import StateIntegrityError
+from aivp.execution.runtime import (
+    Budgets,
+    Runtime,
+)
+from aivp.state.durable import (
+    DurableExecution,
+    complete_terminal_outcome,
+)
 from aivp.state.hashing import (
     sha256_file,
     sha256_json,
@@ -265,6 +273,144 @@ class StateIntegrityTests(
                     0,
                 )
 
+
+
+    def test_terminal_outcome_is_persisted_atomically(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            db_path = root / "state.db"
+
+            repo = root / "repo"
+            repo.mkdir()
+
+            import subprocess
+
+            subprocess.run(
+                ["git", "init", "-q"],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.email",
+                    "aivp@example.invalid",
+                ],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "config",
+                    "user.name",
+                    "AIVP Test",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            (repo / "base.txt").write_text(
+                "base\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "base",
+                ],
+                cwd=repo,
+                check=True,
+            )
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            runtime = Runtime(
+                run_dir,
+                Budgets(),
+            )
+
+            with SQLiteStateStore(
+                db_path
+            ) as store:
+                store.begin_run(
+                    run_id="run-policy",
+                    repo_path=repo,
+                    base_sha="base",
+                    current_state="GENERATING",
+                )
+
+                durable = DurableExecution(
+                    store=store,
+                    run_id="run-policy",
+                )
+
+                complete_terminal_outcome(
+                    durable=durable,
+                    runtime=runtime,
+                    repo=repo,
+                    task={"task": "example"},
+                    config={"policy": "test"},
+                    state="DENIED",
+                    reason="policy denied",
+                )
+
+                run = store.connection.execute(
+                    """
+                    SELECT *
+                    FROM runs
+                    WHERE run_id = ?
+                    """,
+                    ("run-policy",),
+                ).fetchone()
+
+                self.assertEqual(
+                    run["current_state"],
+                    "DENIED",
+                )
+                self.assertEqual(
+                    run["status"],
+                    "DENIED",
+                )
+                self.assertIsNotNone(
+                    run["finished_at"]
+                )
+
+                checkpoint = store.load(
+                    "run-policy"
+                )
+
+                self.assertEqual(
+                    checkpoint["state"],
+                    "DENIED",
+                )
+                self.assertEqual(
+                    checkpoint["reason"],
+                    "policy denied",
+                )
+
+                step = store.load_step(
+                    "run-policy:"
+                    "policy-terminal:1"
+                )
+
+                self.assertEqual(
+                    step["status"],
+                    "SUCCEEDED",
+                )
 
 
 if __name__ == "__main__":

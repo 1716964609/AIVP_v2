@@ -452,3 +452,101 @@ def complete_verification(
             "Injected crash after "
             "VERIFIED checkpoint"
         )
+
+
+def complete_terminal_outcome(
+    *,
+    durable: DurableExecution,
+    runtime: Runtime,
+    repo: Path,
+    task: Mapping[str, Any],
+    config: Mapping[str, Any],
+    state: str,
+    reason: str,
+) -> None:
+    if state not in {
+        "HUMAN_REQUIRED",
+        "DENIED",
+    }:
+        raise StateIntegrityError(
+            "Unsupported terminal outcome: "
+            f"{state}"
+        )
+
+    timestamp = now_iso()
+
+    diff_text = capture_diff(repo)
+    diff_hash = sha256_text(diff_text)
+
+    base_sha = git(
+        repo,
+        "rev-parse",
+        "HEAD",
+    ).stdout.strip()
+
+    checkpoint = {
+        "checkpoint_schema_version": (
+            CHECKPOINT_SCHEMA_VERSION
+        ),
+        "state": state,
+        "status": state,
+        "reason": reason,
+        "attempt": durable.attempt,
+        "repo_path": str(
+            repo.resolve()
+        ),
+        **(
+            {
+                "canonical_repo_path": str(
+                    durable.canonical_repo_path
+                    .expanduser()
+                    .resolve()
+                )
+            }
+            if durable.canonical_repo_path
+            is not None
+            else {}
+        ),
+        "run_dir": str(
+            runtime.run_dir.resolve()
+        ),
+        "base_sha": base_sha,
+        "current_diff_hash": diff_hash,
+        "task_hash": sha256_json(
+            dict(task)
+        ),
+        "config_hash": sha256_json(
+            dict(config)
+        ),
+        "counters": dataclasses.asdict(
+            runtime.counters
+        ),
+        "elapsed_seconds": (
+            runtime.elapsed_seconds()
+        ),
+    }
+
+    durable.store.complete_step(
+        step_id=(
+            f"{durable.run_id}:"
+            f"policy-terminal:"
+            f"{durable.attempt}"
+        ),
+        run_id=durable.run_id,
+        step_type="policy-terminal",
+        attempt=durable.attempt,
+        input_hash=sha256_text(reason),
+        output_hash=sha256_json(
+            {
+                "state": state,
+                "reason": reason,
+            }
+        ),
+        started_at=timestamp,
+        finished_at=timestamp,
+        retryable=False,
+        checkpoint_state=state,
+        checkpoint_payload=checkpoint,
+        run_status=state,
+        run_finished_at=timestamp,
+    )
