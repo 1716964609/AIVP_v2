@@ -28,6 +28,9 @@ from aivp.panel.config import (
 from aivp.panel.orchestrator import (
     execute_panel,
 )
+from aivp.policy.capability import (
+    v2_default_policy,
+)
 from aivp.risk.engine import (
     LegacyCompatibleRiskEngine,
 )
@@ -69,6 +72,8 @@ def _execute(
         DurableExecution
     ],
 ) -> Path:
+    policy = v2_default_policy()
+
     generator = CodexAdapter(
         runtime,
         config,
@@ -91,6 +96,7 @@ def _execute(
                 config
             )
         ),
+        policy=policy,
     )
 
     risk_engine = (
@@ -110,6 +116,7 @@ def _execute(
         risk_engine=risk_engine,
         artifacts=ArtifactRegistry(),
         durable=durable,
+        policy=policy,
     )
 
 

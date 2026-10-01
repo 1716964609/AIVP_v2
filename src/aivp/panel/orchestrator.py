@@ -13,6 +13,8 @@ from aivp.artifacts.registry import ArtifactRegistry
 from aivp.errors import (
     AIVPError,
     BudgetExceeded,
+    HumanApprovalRequired,
+    PolicyDenied,
     StateIntegrityError,
 )
 from aivp.execution.runtime import Runtime
@@ -62,6 +64,7 @@ from aivp.state.durable import (
     DurableExecution,
     begin_generation,
     complete_generation,
+    complete_terminal_outcome,
     complete_verification,
 )
 from aivp.state.resume import (
@@ -896,6 +899,121 @@ def execute_panel(
 
             return run_dir
 
+        except HumanApprovalRequired as exc:
+            escalation_reason = str(exc)
+
+            if durable is not None:
+                complete_terminal_outcome(
+                    durable=durable,
+                    runtime=runtime,
+                    repo=repo,
+                    task=task,
+                    config=config,
+                    state="HUMAN_REQUIRED",
+                    reason=escalation_reason,
+                )
+
+            metrics = write_metrics(
+                runtime,
+                "HUMAN_REQUIRED",
+                {
+                    "policy_human_required": True
+                },
+            )
+
+            artifacts.register(
+                "metrics",
+                run_dir / "metrics.json",
+            )
+
+            packet = human_packet(
+                task=task,
+                verification=verification,
+                claude_review=review,
+                rule_risk=rule_risk,
+                codex_risk=codex_risk,
+                aggregate=aggregate,
+                paths=(
+                    changed_paths(repo)
+                    if not runtime.dry_run
+                    else []
+                ),
+                reason=escalation_reason,
+                metrics=metrics,
+            )
+
+            _write_text(
+                artifacts,
+                "human-review",
+                run_dir / "human-review.md",
+                packet,
+            )
+
+            _write_json(
+                artifacts,
+                "status",
+                run_dir / "status.json",
+                {
+                    "status": "HUMAN_REQUIRED",
+                    "reason": escalation_reason,
+                    "metrics": metrics,
+                },
+            )
+
+            runtime.log_event(
+                "run_end",
+                status="HUMAN_REQUIRED",
+                reason=escalation_reason,
+            )
+
+            return run_dir
+
+        except PolicyDenied as exc:
+            escalation_reason = str(exc)
+
+            if durable is not None:
+                complete_terminal_outcome(
+                    durable=durable,
+                    runtime=runtime,
+                    repo=repo,
+                    task=task,
+                    config=config,
+                    state="DENIED",
+                    reason=escalation_reason,
+                )
+
+            metrics = write_metrics(
+                runtime,
+                "DENIED",
+                {
+                    "policy_denied": True
+                },
+            )
+
+            artifacts.register(
+                "metrics",
+                run_dir / "metrics.json",
+            )
+
+            _write_json(
+                artifacts,
+                "status",
+                run_dir / "status.json",
+                {
+                    "status": "DENIED",
+                    "reason": escalation_reason,
+                    "metrics": metrics,
+                },
+            )
+
+            runtime.log_event(
+                "run_end",
+                status="DENIED",
+                reason=escalation_reason,
+            )
+
+            return run_dir
+
         except BudgetExceeded as exc:
             escalation_reason = str(
                 exc
@@ -981,6 +1099,8 @@ def run_panel(
         dry_run=dry_run,
     )
 
+    policy = v2_default_policy()
+
     generator = CodexAdapter(
         runtime,
         config,
@@ -997,7 +1117,8 @@ def run_panel(
     )
 
     verifier = DeterministicVerifier(
-        runtime
+        runtime,
+        policy=policy,
     )
 
     risk_engine = (
@@ -1017,4 +1138,5 @@ def run_panel(
         verifier=verifier,
         risk_engine=risk_engine,
         artifacts=artifacts,
+        policy=policy,
     )
