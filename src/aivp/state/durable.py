@@ -66,6 +66,9 @@ class DurableExecution:
     resume_checkpoint: Optional[
         Mapping[str, Any]
     ] = None
+    canonical_repo_path: Optional[
+        Path
+    ] = None
     fault_after_state: Optional[str] = None
 
     @property
@@ -205,6 +208,18 @@ def complete_generation(
         "attempt": durable.attempt,
         "repo_path": str(
             repo.resolve()
+        ),
+        **(
+            {
+                "canonical_repo_path": str(
+                    durable.canonical_repo_path
+                    .expanduser()
+                    .resolve()
+                )
+            }
+            if durable.canonical_repo_path
+            is not None
+            else {}
         ),
         "run_dir": str(
             runtime.run_dir.resolve()
@@ -351,6 +366,18 @@ def complete_verification(
         "attempt": durable.attempt,
         "repo_path": str(
             repo.resolve()
+        ),
+        **(
+            {
+                "canonical_repo_path": str(
+                    durable.canonical_repo_path
+                    .expanduser()
+                    .resolve()
+                )
+            }
+            if durable.canonical_repo_path
+            is not None
+            else {}
         ),
         "run_dir": str(
             runtime.run_dir.resolve()

@@ -11,6 +11,7 @@ from aivp.artifacts.registry import (
 )
 from aivp.containment.worktree import (
     create_run_worktree,
+    validate_run_worktree,
 )
 from aivp.errors import AIVPError
 from aivp.execution.runtime import Runtime
@@ -181,6 +182,9 @@ def run_new(
         durable = DurableExecution(
             store=store,
             run_id=selected_run_id,
+            canonical_repo_path=(
+                worktree.canonical_repo
+            ),
         )
 
         return _execute(
@@ -232,6 +236,24 @@ def resume_run(
             )
         ).expanduser().resolve()
 
+        canonical_repo = Path(
+            str(
+                checkpoint.get(
+                    "canonical_repo_path",
+                    checkpoint["repo_path"],
+                )
+            )
+        ).expanduser().resolve()
+
+        if canonical_repo != repo:
+            validate_run_worktree(
+                canonical_repo=canonical_repo,
+                worktree_path=repo,
+                base_sha=str(
+                    checkpoint["base_sha"]
+                ),
+            )
+
         run_dir = Path(
             str(
                 checkpoint["run_dir"]
@@ -272,6 +294,9 @@ def resume_run(
         durable = DurableExecution(
             store=store,
             run_id=run_id,
+            canonical_repo_path=(
+                canonical_repo
+            ),
             attempt=(
                 int(
                     checkpoint["attempt"]
@@ -284,7 +309,7 @@ def resume_run(
         return _execute(
             runtime=runtime,
             repo=repo,
-            canonical_repo=repo,
+            canonical_repo=canonical_repo,
             task=task,
             config=config,
             durable=durable,
