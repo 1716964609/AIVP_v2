@@ -44,6 +44,7 @@ from aivp.panel.prompts import (
 from aivp.panel.reporting import (
     human_packet,
     write_metrics,
+    write_run_summary,
 )
 from aivp.panel.task import render_task
 from aivp.policy.capability import (
@@ -117,6 +118,52 @@ def _write_text(
         name,
         path,
     )
+
+
+def _write_terminal_run_summary(
+    *,
+    runtime: Runtime,
+    artifacts: ArtifactRegistry,
+    durable: Optional[DurableExecution],
+    status: str,
+) -> Dict[str, Any]:
+    if durable is not None:
+        model_calls = (
+            durable.store
+            .model_calls_for_run(
+                durable.run_id
+            )
+        )
+
+        run_id = durable.run_id
+
+        pricing_version = (
+            durable.pricing_catalog.version
+            if durable.pricing_catalog
+            is not None
+            else None
+        )
+
+    else:
+        model_calls = []
+        run_id = runtime.run_dir.name
+        pricing_version = None
+
+    summary = write_run_summary(
+        runtime=runtime,
+        status=status,
+        run_id=run_id,
+        model_calls=model_calls,
+        pricing_version=pricing_version,
+    )
+
+    artifacts.register(
+        "run-summary",
+        runtime.run_dir
+        / "run-summary.json",
+    )
+
+    return summary
 
 
 def _invoke_model_call(
@@ -1158,6 +1205,13 @@ def execute_panel(
                 reason=escalation_reason,
             )
 
+            _write_terminal_run_summary(
+                runtime=runtime,
+                artifacts=artifacts,
+                durable=durable,
+                status=status,
+            )
+
             return run_dir
 
         except HumanApprovalRequired as exc:
@@ -1227,6 +1281,13 @@ def execute_panel(
                 reason=escalation_reason,
             )
 
+            _write_terminal_run_summary(
+                runtime=runtime,
+                artifacts=artifacts,
+                durable=durable,
+                status="HUMAN_REQUIRED",
+            )
+
             return run_dir
 
         except PolicyDenied as exc:
@@ -1271,6 +1332,13 @@ def execute_panel(
                 "run_end",
                 status="DENIED",
                 reason=escalation_reason,
+            )
+
+            _write_terminal_run_summary(
+                runtime=runtime,
+                artifacts=artifacts,
+                durable=durable,
+                status="DENIED",
             )
 
             return run_dir
@@ -1331,6 +1399,13 @@ def execute_panel(
                 "run_end",
                 status="HUMAN_REQUIRED",
                 reason=escalation_reason,
+            )
+
+            _write_terminal_run_summary(
+                runtime=runtime,
+                artifacts=artifacts,
+                durable=durable,
+                status="HUMAN_REQUIRED",
             )
 
             return run_dir
