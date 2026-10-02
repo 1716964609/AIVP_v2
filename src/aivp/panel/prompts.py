@@ -12,8 +12,10 @@ from aivp.verification.deterministic import (
 
 def generate_prompt(
     task_text: str,
+    context_text: Optional[str] = None,
 ) -> str:
-    return f"""You are the Generator/Fixer in a controlled code-verification experiment.
+    parts = [
+        """You are the Generator/Fixer in a controlled code-verification experiment.
 
 Implement the task in the current Git repository.
 
@@ -26,8 +28,23 @@ Rules:
 - Do not install new dependencies unless the task explicitly permits it.
 - Stop after implementing the change; the orchestrator runs verification separately.
 
-{task_text}
 """
+        + task_text
+    ]
+
+    if context_text:
+        parts += [
+            "COMPILED REPOSITORY CONTEXT",
+            (
+                "This is a deterministic base-repository "
+                "snapshot selected by the harness. "
+                "The current working tree remains the "
+                "source of truth for edits."
+            ),
+            context_text,
+        ]
+
+    return "\n\n".join(parts) + "\n"
 
 
 def fix_prompt(
@@ -39,6 +56,7 @@ def fix_prompt(
     review: Optional[
         Dict[str, Any]
     ] = None,
+    context_text: Optional[str] = None,
 ) -> str:
     parts = [
         (
@@ -52,6 +70,18 @@ def fix_prompt(
         ),
         task_text,
     ]
+
+    if context_text:
+        parts += [
+            "COMPILED REPOSITORY CONTEXT",
+            (
+                "This is the base-repository context "
+                "selected before generation. "
+                "Inspect the current working tree for "
+                "the latest edited state."
+            ),
+            context_text,
+        ]
 
     if verification is not None:
         parts += [

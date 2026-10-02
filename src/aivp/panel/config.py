@@ -196,3 +196,73 @@ def tracing_from(
             / "otel-spans.jsonl"
         ),
     )
+
+
+def context_budget_from(
+    config: Dict[str, Any],
+):
+    from aivp.context.base import (
+        ContextBudget,
+    )
+
+    raw = config.get("context")
+
+    if raw is None:
+        return None
+
+    if not isinstance(raw, dict):
+        raise AIVPError(
+            "context must be an object"
+        )
+
+    enabled = raw.get(
+        "enabled",
+        True,
+    )
+
+    if not isinstance(enabled, bool):
+        raise AIVPError(
+            "context.enabled must be boolean"
+        )
+
+    if not enabled:
+        return None
+
+    try:
+        max_files = int(
+            raw.get(
+                "max_files",
+                20,
+            )
+        )
+
+        max_chars = int(
+            raw.get(
+                "max_chars",
+                120_000,
+            )
+        )
+    except (
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise AIVPError(
+            "Invalid context budget"
+        ) from exc
+
+    if max_files <= 0:
+        raise AIVPError(
+            "context.max_files must "
+            "be greater than zero"
+        )
+
+    if max_chars <= 0:
+        raise AIVPError(
+            "context.max_chars must "
+            "be greater than zero"
+        )
+
+    return ContextBudget(
+        max_files=max_files,
+        max_chars=max_chars,
+    )
