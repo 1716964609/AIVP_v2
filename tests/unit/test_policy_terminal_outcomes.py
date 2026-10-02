@@ -123,7 +123,10 @@ class PolicyTerminalOutcomeTests(
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
 
-            repo = root / "repo"
+            repo = (
+                root
+                / "SENSITIVE_REPO_TOKEN"
+            )
             self._init_repo(repo)
 
             run_dir = root / "run"
@@ -205,6 +208,42 @@ class PolicyTerminalOutcomeTests(
                 self.assertEqual(
                     status["status"],
                     expected_status,
+                )
+
+                events_text = (
+                    run_dir
+                    / "events.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+
+                self.assertNotIn(
+                    "SENSITIVE_REPO_TOKEN",
+                    events_text,
+                )
+
+                events = json.loads(
+                    events_text
+                )
+
+                self.assertEqual(
+                    events[0]["kind"],
+                    "run_start",
+                )
+
+                self.assertNotIn(
+                    "repo",
+                    events[0],
+                )
+
+                self.assertNotIn(
+                    "canonical_repo",
+                    events[0],
+                )
+
+                self.assertNotIn(
+                    "reason",
+                    events[-1],
                 )
 
                 summary = json.loads(

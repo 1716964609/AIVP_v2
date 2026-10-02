@@ -596,10 +596,7 @@ def execute_panel(
             else "run_start"
         ),
         version=COMPAT_VERSION,
-        repo=str(repo),
-        canonical_repo=str(
-            canonical_repo
-        ),
+        isolated_worktree=(repo != canonical_repo),
         dry_run=runtime.dry_run,
     )
 
@@ -1202,7 +1199,6 @@ def execute_panel(
             runtime.log_event(
                 "run_end",
                 status=status,
-                reason=escalation_reason,
             )
 
             _write_terminal_run_summary(
@@ -1278,7 +1274,6 @@ def execute_panel(
             runtime.log_event(
                 "run_end",
                 status="HUMAN_REQUIRED",
-                reason=escalation_reason,
             )
 
             _write_terminal_run_summary(
@@ -1331,7 +1326,6 @@ def execute_panel(
             runtime.log_event(
                 "run_end",
                 status="DENIED",
-                reason=escalation_reason,
             )
 
             _write_terminal_run_summary(
@@ -1398,7 +1392,6 @@ def execute_panel(
             runtime.log_event(
                 "run_end",
                 status="HUMAN_REQUIRED",
-                reason=escalation_reason,
             )
 
             _write_terminal_run_summary(
