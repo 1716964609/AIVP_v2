@@ -5,7 +5,7 @@ import os
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Optional, Any
+from typing import Mapping, Optional, Any, TYPE_CHECKING
 
 from aivp.artifacts.io import (
     dump_json,
@@ -34,6 +34,12 @@ from aivp.state.hashing import (
     sha256_json,
     sha256_text,
 )
+
+
+if TYPE_CHECKING:
+    from aivp.telemetry.pricing import (
+        PricingCatalog,
+    )
 
 
 def _hard_crash_if_requested(
@@ -70,6 +76,9 @@ class DurableExecution:
         Path
     ] = None
     fault_after_state: Optional[str] = None
+    pricing_catalog: Optional[
+        "PricingCatalog"
+    ] = None
 
     @property
     def is_resume(self) -> bool:
@@ -156,6 +165,12 @@ def begin_generation(
         repo_path=repo.resolve(),
         base_sha=base_sha,
         current_state="GENERATING",
+        pricing_version=(
+            durable.pricing_catalog.version
+            if durable.pricing_catalog
+            is not None
+            else None
+        ),
     )
 
     return base_sha

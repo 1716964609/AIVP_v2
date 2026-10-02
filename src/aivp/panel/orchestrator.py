@@ -140,6 +140,31 @@ def _invoke_model_call(
         ),
     )
 
+    cost_usd = result.cost_estimate_usd
+
+    if (
+        cost_usd is None
+        and durable is not None
+        and durable.pricing_catalog
+        is not None
+    ):
+        cost_usd = (
+            durable.pricing_catalog
+            .estimate_cost_usd(
+                provider=result.provider,
+                model=result.model,
+                input_tokens=(
+                    result.input_tokens
+                ),
+                cached_tokens=(
+                    result.cached_tokens
+                ),
+                output_tokens=(
+                    result.output_tokens
+                ),
+            )
+        )
+
     if durable is not None:
         durable.store.record_model_call(
             call_id=str(uuid.uuid4()),
@@ -154,9 +179,7 @@ def _invoke_model_call(
             cached_tokens=result.cached_tokens,
             output_tokens=result.output_tokens,
             latency_ms=latency_ms,
-            cost_usd=(
-                result.cost_estimate_usd
-            ),
+            cost_usd=cost_usd,
             status=(
                 "SUCCEEDED"
                 if result.raw_exit_status == 0

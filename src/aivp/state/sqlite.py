@@ -159,6 +159,7 @@ class SQLiteStateStore:
         repo_path: Path,
         base_sha: str,
         current_state: str,
+        pricing_version: Optional[str] = None,
     ) -> None:
         now = _now_iso()
 
@@ -170,9 +171,10 @@ class SQLiteStateStore:
                 base_sha,
                 status,
                 current_state,
+                pricing_version,
                 started_at
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 run_id,
@@ -180,6 +182,7 @@ class SQLiteStateStore:
                 base_sha,
                 "RUNNING",
                 current_state,
+                pricing_version,
                 now,
             ),
         )

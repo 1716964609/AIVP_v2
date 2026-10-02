@@ -35,6 +35,7 @@ class DurableStateStore(
         repo_path: Path,
         base_sha: str,
         current_state: str,
+        pricing_version: Optional[str] = None,
     ) -> None:
         ...
 
