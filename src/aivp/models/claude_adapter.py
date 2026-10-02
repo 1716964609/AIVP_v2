@@ -49,6 +49,12 @@ def _decode_claude_output(
             "session_id": outer.get(
                 "session_id"
             ),
+            "usage": outer.get(
+                "usage"
+            ),
+            "model_usage": outer.get(
+                "modelUsage"
+            ),
         }
 
         cost = outer.get(
@@ -123,12 +129,46 @@ class ClaudeAdapter:
             if path.exists()
         )
 
+        usage = metadata.get(
+            "usage"
+        )
+
+        if not isinstance(usage, dict):
+            usage = {}
+
+        input_tokens = usage.get(
+            "input_tokens"
+        )
+
+        cached_tokens = usage.get(
+            "cache_read_input_tokens"
+        )
+
+        output_tokens = usage.get(
+            "output_tokens"
+        )
+
         return ModelResult(
             provider="anthropic",
             model=model,
             started_at=started_at,
             finished_at=_now_iso(),
             raw_exit_status=cp.returncode,
+            input_tokens=(
+                input_tokens
+                if isinstance(input_tokens, int)
+                else None
+            ),
+            output_tokens=(
+                output_tokens
+                if isinstance(output_tokens, int)
+                else None
+            ),
+            cached_tokens=(
+                cached_tokens
+                if isinstance(cached_tokens, int)
+                else None
+            ),
             cost_estimate_usd=cost,
             artifact_paths=artifact_paths,
             last_message=last_message,

@@ -100,6 +100,8 @@ class ModelAdapterTests(unittest.TestCase):
                 repo=repo,
             )
 
+            expected.append("--json")
+
             expected.extend(
                 [
                     "-o",
@@ -209,6 +211,108 @@ class ModelAdapterTests(unittest.TestCase):
                 argv,
             )
 
+    def test_codex_jsonl_usage_is_normalized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            run_dir = root / "run"
+
+            repo.mkdir()
+            run_dir.mkdir()
+
+            config = {
+                "codex": {
+                    "binary": "codex",
+                    "generator_extra_args": [
+                        "exec"
+                    ],
+                    "risk_extra_args": [
+                        "exec"
+                    ],
+                    "model": "test-model",
+                    "reasoning_effort": "",
+                }
+            }
+
+            stdout = "\n".join(
+                [
+                    json.dumps(
+                        {
+                            "type": "thread.started",
+                            "thread_id": "thread-1",
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "type": "turn.completed",
+                            "usage": {
+                                "input_tokens": 19673,
+                                "cached_input_tokens": 13056,
+                                "cache_write_input_tokens": 0,
+                                "output_tokens": 5,
+                                "reasoning_output_tokens": 0,
+                            },
+                        }
+                    ),
+                ]
+            )
+
+            runtime = FakeRuntime(
+                run_dir,
+                stdout=stdout,
+            )
+
+            result = CodexAdapter(
+                runtime,
+                config,
+            ).invoke(
+                ModelRequest(
+                    role="generator",
+                    prompt="implement task",
+                    repo=repo,
+                    timeout_seconds=300,
+                    log_stem="generate",
+                )
+            )
+
+            self.assertIn(
+                "--json",
+                runtime.calls[0]["argv"],
+            )
+
+            self.assertEqual(
+                result.input_tokens,
+                19673,
+            )
+
+            self.assertEqual(
+                result.cached_tokens,
+                13056,
+            )
+
+            self.assertEqual(
+                result.output_tokens,
+                5,
+            )
+
+            self.assertEqual(
+                result.raw_metadata[
+                    "thread_id"
+                ],
+                "thread-1",
+            )
+
+            self.assertEqual(
+                result.raw_metadata[
+                    "usage"
+                ][
+                    "reasoning_output_tokens"
+                ],
+                0,
+            )
+
+
+
     def test_claude_wrapper_is_decoded(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -242,6 +346,12 @@ class ModelAdapterTests(unittest.TestCase):
                     "num_turns": 1,
                     "total_cost_usd": 0.0123,
                     "session_id": "session-1",
+                    "usage": {
+                        "input_tokens": 4,
+                        "cache_creation_input_tokens": 100,
+                        "cache_read_input_tokens": 200,
+                        "output_tokens": 30,
+                    },
                 }
             )
 
@@ -300,6 +410,30 @@ class ModelAdapterTests(unittest.TestCase):
                     "session_id"
                 ],
                 "session-1",
+            )
+
+            self.assertEqual(
+                result.input_tokens,
+                4,
+            )
+
+            self.assertEqual(
+                result.cached_tokens,
+                200,
+            )
+
+            self.assertEqual(
+                result.output_tokens,
+                30,
+            )
+
+            self.assertEqual(
+                result.raw_metadata[
+                    "usage"
+                ][
+                    "cache_creation_input_tokens"
+                ],
+                100,
             )
 
     def test_claude_plain_output_falls_back_safely(self):

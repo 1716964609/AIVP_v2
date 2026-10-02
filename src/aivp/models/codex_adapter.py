@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from typing import Any, Dict
 
 from aivp.artifacts.io import dump_json
@@ -14,6 +15,50 @@ def _now_iso() -> str:
         .astimezone()
         .isoformat(timespec="seconds")
     )
+
+
+def _decode_codex_jsonl(
+    raw: str,
+) -> Dict[str, Any]:
+    metadata: Dict[str, Any] = {}
+
+    for line in raw.splitlines():
+        try:
+            event = json.loads(line)
+        except (
+            json.JSONDecodeError,
+            TypeError,
+        ):
+            continue
+
+        if not isinstance(event, dict):
+            continue
+
+        if (
+            event.get("type")
+            == "thread.started"
+        ):
+            thread_id = event.get(
+                "thread_id"
+            )
+
+            if isinstance(thread_id, str):
+                metadata[
+                    "thread_id"
+                ] = thread_id
+
+        if (
+            event.get("type")
+            == "turn.completed"
+        ):
+            usage = event.get(
+                "usage"
+            )
+
+            if isinstance(usage, dict):
+                metadata["usage"] = usage
+
+    return metadata
 
 
 class CodexAdapter:
@@ -41,6 +86,8 @@ class CodexAdapter:
             risk=is_risk,
             repo=request.repo,
         )
+
+        argv.append("--json")
 
         artifacts = []
 
@@ -112,15 +159,53 @@ class CodexAdapter:
             .get("model", "")
         ).strip() or "unknown"
 
+        metadata = _decode_codex_jsonl(
+            cp.stdout
+        )
+
+        metadata["role"] = request.role
+
+        usage = metadata.get(
+            "usage"
+        )
+
+        if not isinstance(usage, dict):
+            usage = {}
+
+        input_tokens = usage.get(
+            "input_tokens"
+        )
+
+        cached_tokens = usage.get(
+            "cached_input_tokens"
+        )
+
+        output_tokens = usage.get(
+            "output_tokens"
+        )
+
         return ModelResult(
             provider="openai",
             model=model,
             started_at=started_at,
             finished_at=_now_iso(),
             raw_exit_status=cp.returncode,
+            input_tokens=(
+                input_tokens
+                if isinstance(input_tokens, int)
+                else None
+            ),
+            output_tokens=(
+                output_tokens
+                if isinstance(output_tokens, int)
+                else None
+            ),
+            cached_tokens=(
+                cached_tokens
+                if isinstance(cached_tokens, int)
+                else None
+            ),
             artifact_paths=tuple(artifacts),
             last_message=last_message,
-            raw_metadata={
-                "role": request.role,
-            },
+            raw_metadata=metadata,
         )
