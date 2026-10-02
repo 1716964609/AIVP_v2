@@ -213,8 +213,8 @@ class Runtime:
         self.log_event(
             "command_start",
             actor=actor,
-            command=quote_cmd(argv),
-            cwd=str(cwd),
+            tool=actor or "command",
+            timeout_seconds=timeout,
         )
 
         if self.dry_run:
@@ -269,8 +269,13 @@ class Runtime:
 
             self.log_event(
                 "command_timeout",
-                command=quote_cmd(argv),
-                elapsed_seconds=elapsed,
+                actor=actor,
+                tool=actor or "command",
+                timeout_seconds=timeout,
+                elapsed_seconds=round(
+                    elapsed,
+                    3,
+                ),
             )
 
             raise BudgetExceeded(
@@ -298,7 +303,7 @@ class Runtime:
         self.log_event(
             "command_end",
             actor=actor,
-            command=quote_cmd(argv),
+            tool=actor or "command",
             returncode=cp.returncode,
             elapsed_seconds=round(
                 elapsed,

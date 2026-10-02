@@ -199,8 +199,37 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             )
 
             self.assertEqual(
-                old.events,
-                new.events,
+                [
+                    event["kind"]
+                    for event in old.events
+                ],
+                [
+                    event["kind"]
+                    for event in new.events
+                ],
+            )
+
+            self.assertEqual(
+                old.events[0]["actor"],
+                new.events[0]["actor"],
+            )
+
+            self.assertNotIn(
+                "command",
+                new.events[0],
+            )
+            self.assertNotIn(
+                "cwd",
+                new.events[0],
+            )
+
+            self.assertEqual(
+                new.events[0]["tool"],
+                "codex",
+            )
+            self.assertEqual(
+                new.events[0]["timeout_seconds"],
+                10,
             )
 
             self.assertEqual(
@@ -214,23 +243,31 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 ).read_bytes(),
             )
 
+            persisted_old = json.loads(
+                (
+                    old_dir
+                    / "events.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            persisted_new = json.loads(
+                (
+                    new_dir
+                    / "events.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
             self.assertEqual(
-                json.loads(
-                    (
-                        old_dir
-                        / "events.json"
-                    ).read_text(
-                        encoding="utf-8"
-                    )
-                ),
-                json.loads(
-                    (
-                        new_dir
-                        / "events.json"
-                    ).read_text(
-                        encoding="utf-8"
-                    )
-                ),
+                persisted_old,
+                old.events,
+            )
+            self.assertEqual(
+                persisted_new,
+                new.events,
             )
 
 
