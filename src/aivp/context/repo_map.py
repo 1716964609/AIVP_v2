@@ -36,18 +36,32 @@ class RepoMapEntry:
 def _is_test_path(
     relative: Path,
 ) -> bool:
-    parts = relative.parts
-    name = relative.name
+    parts = tuple(
+        part.lower()
+        for part in relative.parts
+    )
 
-    if "tests" in parts:
+    name = relative.name.lower()
+    stem = relative.stem.lower()
+
+    if any(
+        part in {
+            "test",
+            "tests",
+            "__tests__",
+        }
+        for part in parts
+    ):
         return True
 
     if name.startswith("test_"):
         return True
 
-    stem = relative.stem
-
-    return stem.endswith("_test")
+    return (
+        stem.endswith("_test")
+        or stem.endswith(".test")
+        or stem.endswith(".spec")
+    )
 
 
 def _is_binary_file(

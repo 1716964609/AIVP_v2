@@ -31,3 +31,13 @@ __all__ += [
     "SelectionCandidate",
     "select_relevant_files",
 ]
+
+from aivp.context.association import (
+    TestAssociation,
+    find_test_associations,
+)
+
+__all__ += [
+    "TestAssociation",
+    "find_test_associations",
+]
