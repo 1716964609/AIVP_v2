@@ -332,7 +332,7 @@ def _invoke_edit(
     log_stem: str,
     role: str,
     policy: StaticCapabilityPolicy,
-    durable: Optional[DurableExecution],
+    durable: Optional[DurableExecution] = None,
 ) -> ModelResult:
     policy.authorize(
         CapabilityRequest(
@@ -374,7 +374,7 @@ def _invoke_review(
     verification: Dict[str, Any],
     review_index: int,
     policy: StaticCapabilityPolicy,
-    durable: Optional[DurableExecution],
+    durable: Optional[DurableExecution] = None,
 ) -> Dict[str, Any]:
     policy.authorize(
         CapabilityRequest(
@@ -477,7 +477,7 @@ def _invoke_risk(
     task_text: str,
     diff_text: str,
     policy: StaticCapabilityPolicy,
-    durable: Optional[DurableExecution],
+    durable: Optional[DurableExecution] = None,
 ) -> Dict[str, Any]:
     policy.authorize(
         CapabilityRequest(
