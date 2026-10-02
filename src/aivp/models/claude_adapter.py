@@ -29,10 +29,7 @@ def _decode_claude_output(
 
     inner = outer.get("result")
 
-    if (
-        outer.get("type") == "result"
-        and isinstance(inner, str)
-    ):
+    if outer.get("type") == "result":
         meta = {
             "duration_ms": outer.get(
                 "duration_ms"
@@ -67,7 +64,11 @@ def _decode_claude_output(
         ):
             cost = None
 
-        return inner, meta, cost
+        return (
+            inner
+            if isinstance(inner, str)
+            else raw
+        ), meta, cost
 
     return raw, {}, None
 
@@ -101,7 +102,7 @@ class ClaudeAdapter:
             timeout_seconds=request.timeout_seconds,
             log_stem=request.log_stem,
             actor="claude",
-            check=True,
+            check=False,
         )
 
         (

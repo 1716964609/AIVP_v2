@@ -16,9 +16,11 @@ class FakeRuntime:
         self,
         run_dir: Path,
         stdout: str = "raw-stdout",
+        returncode: int = 0,
     ):
         self.run_dir = run_dir
         self.stdout = stdout
+        self.returncode = returncode
         self.calls = []
 
     def command(
@@ -45,7 +47,7 @@ class FakeRuntime:
 
         return subprocess.CompletedProcess(
             argv,
-            0,
+            self.returncode,
             stdout=self.stdout,
             stderr="",
         )
@@ -488,6 +490,92 @@ class ModelAdapterTests(unittest.TestCase):
             self.assertEqual(
                 result.model,
                 "unknown",
+            )
+
+
+    def test_claude_error_result_preserves_usage_and_cost(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            run_dir = root / "run"
+
+            repo.mkdir()
+            run_dir.mkdir()
+
+            payload = {
+                "type": "result",
+                "is_error": True,
+                "subtype": "error_max_turns",
+                "total_cost_usd": 0.0724634,
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_read_input_tokens": 8257,
+                    "output_tokens": 179,
+                },
+            }
+
+            runtime = FakeRuntime(
+                run_dir,
+                stdout=json.dumps(payload),
+                returncode=1,
+            )
+
+            adapter = ClaudeAdapter(
+                runtime,
+                {
+                    "claude": {
+                        "binary": "claude",
+                        "model": "claude-test",
+                        "max_turns": 1,
+                    }
+                },
+            )
+
+            result = adapter.invoke(
+                ModelRequest(
+                    role="reviewer",
+                    prompt=(
+                        "SENSITIVE_PROMPT_TOKEN"
+                    ),
+                    repo=repo,
+                    timeout_seconds=30,
+                    log_stem="claude-review",
+                )
+            )
+
+            self.assertEqual(
+                runtime.calls[0]["check"],
+                False,
+            )
+
+            self.assertEqual(
+                result.raw_exit_status,
+                1,
+            )
+
+            self.assertEqual(
+                result.provider,
+                "anthropic",
+            )
+
+            self.assertEqual(
+                result.input_tokens,
+                2,
+            )
+
+            self.assertEqual(
+                result.cached_tokens,
+                8257,
+            )
+
+            self.assertEqual(
+                result.output_tokens,
+                179,
+            )
+
+            self.assertAlmostEqual(
+                result.cost_estimate_usd,
+                0.0724634,
             )
 
 

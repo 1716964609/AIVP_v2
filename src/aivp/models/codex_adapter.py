@@ -142,7 +142,7 @@ class CodexAdapter:
             timeout_seconds=request.timeout_seconds,
             log_stem=request.log_stem,
             actor="codex",
-            check=True,
+            check=False,
         )
 
         if output_file.exists():

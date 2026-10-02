@@ -329,7 +329,8 @@ class Runtime:
 
                 raise BudgetExceeded(
                     "Command timed out after "
-                    f"{timeout}s: {argv[0]}"
+                    f"{timeout}s: "
+                    f"{actor or 'command'}"
                 ) from exc
 
             elapsed = (
@@ -383,7 +384,7 @@ class Runtime:
                     (
                         f"Command failed "
                         f"({cp.returncode}): "
-                        f"{quote_cmd(argv)}"
+                        f"{actor or 'command'}"
                     ),
                     cp.returncode,
                 )

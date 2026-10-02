@@ -5,6 +5,8 @@ import contextlib
 import time
 import uuid
 
+from aivp.errors import CommandFailed
+
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -320,6 +322,16 @@ def _invoke_model_call(
                     "cost_usd",
                     cost_usd,
                 )
+
+        if result.raw_exit_status != 0:
+            raise CommandFailed(
+                (
+                    "Model call failed "
+                    f"({result.raw_exit_status}): "
+                    f"{result.provider}"
+                ),
+                result.raw_exit_status,
+            )
 
         return result
 

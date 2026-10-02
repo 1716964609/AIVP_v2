@@ -4,6 +4,7 @@ import unittest
 
 from pathlib import Path
 
+from aivp.errors import CommandFailed
 from aivp.execution.runtime import Budgets, Runtime
 
 
@@ -112,6 +113,69 @@ class RuntimeTelemetryTests(unittest.TestCase):
             self.assertNotIn(
                 "command",
                 end_event,
+            )
+
+
+    def test_command_failure_exception_is_content_safe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            repo = (
+                root
+                / "SENSITIVE_FAILURE_CWD_TOKEN"
+            )
+            repo.mkdir()
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            runtime = Runtime(
+                run_dir,
+                Budgets(),
+            )
+
+            with self.assertRaises(
+                CommandFailed
+            ) as raised:
+                runtime.command(
+                    [
+                        sys.executable,
+                        "-c",
+                        (
+                            "import sys; "
+                            "sys.exit(7)"
+                        ),
+                        "SENSITIVE_FAILURE_ARG_TOKEN",
+                    ],
+                    cwd=repo,
+                    timeout_seconds=10,
+                    log_stem="failed-command",
+                    actor="claude",
+                    check=True,
+                )
+
+            message = str(
+                raised.exception
+            )
+
+            self.assertIn(
+                "Command failed (7): claude",
+                message,
+            )
+
+            self.assertNotIn(
+                "SENSITIVE_FAILURE_ARG_TOKEN",
+                message,
+            )
+
+            self.assertNotIn(
+                "SENSITIVE_FAILURE_CWD_TOKEN",
+                message,
+            )
+
+            self.assertNotIn(
+                "import sys",
+                message,
             )
 
 
