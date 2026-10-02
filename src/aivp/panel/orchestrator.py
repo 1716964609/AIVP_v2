@@ -5,7 +5,6 @@ import contextlib
 import time
 import uuid
 
-from aivp.errors import CommandFailed
 
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -18,6 +17,7 @@ from aivp.artifacts.registry import ArtifactRegistry
 from aivp.errors import (
     AIVPError,
     BudgetExceeded,
+    CommandFailed,
     HumanApprovalRequired,
     PolicyDenied,
     StateIntegrityError,
@@ -1345,6 +1345,86 @@ def execute_panel(
                 artifacts=artifacts,
                 durable=durable,
                 status="DENIED",
+            )
+
+            return run_dir
+
+        except CommandFailed as exc:
+            escalation_reason = str(
+                exc
+            )
+
+            if durable is not None:
+                complete_terminal_outcome(
+                    durable=durable,
+                    runtime=runtime,
+                    repo=repo,
+                    task=task,
+                    config=config,
+                    state="HUMAN_REQUIRED",
+                    reason=escalation_reason,
+                )
+
+            metrics = write_metrics(
+                runtime,
+                "HUMAN_REQUIRED",
+                {
+                    "model_call_failed": True,
+                    "model_returncode": (
+                        exc.returncode
+                    ),
+                },
+            )
+
+            artifacts.register(
+                "metrics",
+                run_dir / "metrics.json",
+            )
+
+            packet = human_packet(
+                task=task,
+                verification=verification,
+                claude_review=review,
+                rule_risk=rule_risk,
+                codex_risk=codex_risk,
+                aggregate=aggregate,
+                paths=(
+                    changed_paths(repo)
+                    if not runtime.dry_run
+                    else []
+                ),
+                reason=escalation_reason,
+                metrics=metrics,
+            )
+
+            _write_text(
+                artifacts,
+                "human-review",
+                run_dir / "human-review.md",
+                packet,
+            )
+
+            _write_json(
+                artifacts,
+                "status",
+                run_dir / "status.json",
+                {
+                    "status": "HUMAN_REQUIRED",
+                    "reason": escalation_reason,
+                    "metrics": metrics,
+                },
+            )
+
+            runtime.log_event(
+                "run_end",
+                status="HUMAN_REQUIRED",
+            )
+
+            _write_terminal_run_summary(
+                runtime=runtime,
+                artifacts=artifacts,
+                durable=durable,
+                status="HUMAN_REQUIRED",
             )
 
             return run_dir
