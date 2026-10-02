@@ -199,6 +199,68 @@ class ContextRepoMapTests(
                 [],
             )
 
+    def test_repo_map_ignores_generated_run_reports(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+
+            reports = (
+                repo / "reports"
+            )
+
+            reports.mkdir()
+
+            (
+                reports
+                / "reference.md"
+            ).write_text(
+                "keep me\n",
+                encoding="utf-8",
+            )
+
+            run_dir = (
+                reports
+                / "m1-exit"
+                / "case"
+                / "run-20261003-010000"
+            )
+
+            run_dir.mkdir(
+                parents=True
+            )
+
+            (
+                run_dir
+                / "task.txt"
+            ).write_text(
+                "historical task\n",
+                encoding="utf-8",
+            )
+
+            paths = [
+                entry.path
+                for entry
+                in build_repo_map(
+                    repo
+                )
+            ]
+
+            self.assertIn(
+                "reports/reference.md",
+                paths,
+            )
+
+            self.assertNotIn(
+                (
+                    "reports/m1-exit/"
+                    "case/"
+                    "run-20261003-010000/"
+                    "task.txt"
+                ),
+                paths,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

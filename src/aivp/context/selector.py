@@ -13,6 +13,10 @@ _TOKEN_RE = re.compile(
     r"[A-Za-z0-9]+"
 )
 
+_IDENTIFIER_RE = re.compile(
+    r"\b[A-Za-z_][A-Za-z0-9_]*\b"
+)
+
 _STOP_WORDS = frozenset(
     {
         "add",
@@ -57,6 +61,61 @@ def _tokens(
             continue
 
         result.append(raw)
+
+    return tuple(
+        sorted(
+            set(result)
+        )
+    )
+
+
+def _identifiers(
+    text: str,
+) -> Tuple[str, ...]:
+    result = []
+
+    for raw in _IDENTIFIER_RE.findall(
+        text
+    ):
+        if len(raw) < 4:
+            continue
+
+        has_snake_case = (
+            "_" in raw
+        )
+
+        has_lower_camel_case = (
+            raw[0].islower()
+            and any(
+                char.isupper()
+                for char in raw[1:]
+            )
+        )
+
+        uppercase_count = sum(
+            char.isupper()
+            for char in raw
+        )
+
+        has_pascal_case = (
+            raw[0].isupper()
+            and uppercase_count >= 2
+        )
+
+        has_camel_case = (
+            has_lower_camel_case
+            or has_pascal_case
+        )
+
+        if not (
+            has_snake_case
+            or has_camel_case
+        ):
+            continue
+
+        result.append(
+            raw.lower()
+        )
 
     return tuple(
         sorted(
@@ -125,7 +184,14 @@ def select_relevant_files(
         task_text
     )
 
-    if not query_tokens:
+    query_identifiers = _identifiers(
+        task_text
+    )
+
+    if (
+        not query_tokens
+        and not query_identifiers
+    ):
         return ()
 
     selected = []
@@ -171,8 +237,34 @@ def select_relevant_files(
             )
         )
 
+        content_identifiers = set(
+            _identifiers(
+                content
+            )
+        )
+
+        exact_identifier_matches = (
+            tuple(
+                identifier
+                for identifier
+                in query_identifiers
+                if identifier
+                in content_identifiers
+            )
+        )
+
         reasons = []
         score = 0
+
+        for identifier in (
+            exact_identifier_matches
+        ):
+            reasons.append(
+                "exact_identifier:"
+                f"{identifier}"
+            )
+
+            score += 25
 
         for token in path_matches:
             reasons.append(

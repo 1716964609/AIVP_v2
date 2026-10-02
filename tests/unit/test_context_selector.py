@@ -208,6 +208,73 @@ class ContextSelectorTests(
                 ],
             )
 
+    def test_exact_identifier_outranks_generic_tokens(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+
+            (
+                repo / "config.py"
+            ).write_text(
+                (
+                    "def context_budget_from"
+                    "(config):\n"
+                    "    return config\n"
+                ),
+                encoding="utf-8",
+            )
+
+            (
+                repo / "noise.py"
+            ).write_text(
+                (
+                    "context budget files "
+                    "chars default values "
+                    "tests returns\n"
+                ),
+                encoding="utf-8",
+            )
+
+            result = select_relevant_files(
+                repo=repo,
+                repo_map=build_repo_map(
+                    repo
+                ),
+                task_text=(
+                    "Change "
+                    "context_budget_from "
+                    "default max_files"
+                ),
+            )
+
+            self.assertEqual(
+                result[0].path,
+                "config.py",
+            )
+
+            self.assertIn(
+                (
+                    "exact_identifier:"
+                    "context_budget_from"
+                ),
+                result[0].reasons,
+            )
+
+            by_path = {
+                item.path: item
+                for item in result
+            }
+
+            self.assertGreater(
+                by_path[
+                    "config.py"
+                ].score,
+                by_path[
+                    "noise.py"
+                ].score,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

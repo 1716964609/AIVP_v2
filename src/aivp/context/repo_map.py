@@ -24,6 +24,39 @@ IGNORED_DIRS = frozenset(
 )
 
 
+def _is_ignored_directory(
+    *,
+    repo: Path,
+    root_path: Path,
+    directory: str,
+) -> bool:
+    if directory in IGNORED_DIRS:
+        return True
+
+    relative = (
+        root_path
+        / directory
+    ).relative_to(
+        repo
+    )
+
+    parts = relative.parts
+
+    if (
+        parts
+        and parts[0] == "reports"
+        and any(
+            part.startswith(
+                "run-"
+            )
+            for part in parts
+        )
+    ):
+        return True
+
+    return False
+
+
 @dataclass(frozen=True)
 class RepoMapEntry:
     path: str
@@ -94,7 +127,11 @@ def build_repo_map(
             directory
             for directory in dirs
             if (
-                directory not in IGNORED_DIRS
+                not _is_ignored_directory(
+                    repo=repo,
+                    root_path=root_path,
+                    directory=directory,
+                )
                 and not (
                     root_path
                     / directory
