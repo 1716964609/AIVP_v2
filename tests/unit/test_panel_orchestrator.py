@@ -280,6 +280,35 @@ class HarnessPanelTests(
                 "AUTO_FINISHED",
             )
 
+            summary = json.loads(
+                (
+                    run_dir
+                    / "run-summary.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                summary["status"],
+                "AUTO_FINISHED",
+            )
+
+            self.assertIn(
+                "time",
+                summary,
+            )
+
+            self.assertIn(
+                "tokens",
+                summary,
+            )
+
+            self.assertIn(
+                "cost",
+                summary,
+            )
+
             self.assertEqual(
                 runtime.counters.codex_calls,
                 2,
@@ -530,6 +559,35 @@ class HarnessPanelTests(
             self.assertEqual(
                 status["status"],
                 "HUMAN_REQUIRED",
+            )
+
+            summary = json.loads(
+                (
+                    run_dir
+                    / "run-summary.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                summary["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertIn(
+                "time",
+                summary,
+            )
+
+            self.assertIn(
+                "tokens",
+                summary,
+            )
+
+            self.assertIn(
+                "cost",
+                summary,
             )
 
             self.assertEqual(
@@ -1142,6 +1200,35 @@ class HarnessPanelTests(
             self.assertEqual(
                 status["status"],
                 "HUMAN_REQUIRED",
+            )
+
+            summary = json.loads(
+                (
+                    run_dir
+                    / "run-summary.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                summary["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertIn(
+                "time",
+                summary,
+            )
+
+            self.assertIn(
+                "tokens",
+                summary,
+            )
+
+            self.assertIn(
+                "cost",
+                summary,
             )
 
             self.assertIn(
