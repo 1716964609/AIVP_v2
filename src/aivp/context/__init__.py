@@ -63,3 +63,15 @@ __all__ += [
     "BudgetResult",
     "enforce_context_budget",
 ]
+
+from aivp.context.compiler import (
+    COMPILER_VERSION,
+    ContextCompilation,
+    compile_context,
+)
+
+__all__ += [
+    "COMPILER_VERSION",
+    "ContextCompilation",
+    "compile_context",
+]
