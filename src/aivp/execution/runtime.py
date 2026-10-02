@@ -15,6 +15,9 @@ from aivp.errors import (
     BudgetExceeded,
     CommandFailed,
 )
+from aivp.telemetry.tracing import (
+    TracingSession,
+)
 
 
 @dataclasses.dataclass
@@ -58,10 +61,22 @@ class Runtime:
         resume: bool = False,
         counters: Optional[Counters] = None,
         elapsed_before_resume: float = 0.0,
+        tracing: Optional[TracingSession] = None,
     ):
         self.run_dir = run_dir
         self.budgets = budgets
         self.counters = counters or Counters()
+        self.tracing = (
+            tracing
+            if tracing is not None
+            else TracingSession(
+                enabled=False,
+                output_path=(
+                    run_dir
+                    / "otel-spans.jsonl"
+                ),
+            )
+        )
 
         self.elapsed_before_resume = float(
             elapsed_before_resume

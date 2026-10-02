@@ -23,6 +23,7 @@ from aivp.models.codex_adapter import (
 )
 from aivp.panel.config import (
     budgets_from,
+    tracing_from,
     verification_sandbox_from,
 )
 from aivp.panel.orchestrator import (
@@ -223,6 +224,10 @@ def run_new(
         run_dir,
         budgets_from(config),
         dry_run=dry_run,
+        tracing=tracing_from(
+            config,
+            run_dir,
+        ),
     )
 
     if dry_run:
@@ -365,6 +370,10 @@ def resume_run(
             run_dir,
             budgets_from(config),
             resume=True,
+            tracing=tracing_from(
+                config,
+                run_dir,
+            ),
             counters=(
                 counters_from_checkpoint(
                     checkpoint

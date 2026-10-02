@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from pathlib import Path
 
 from aivp.containment.docker_sandbox import (
     DockerSandbox,
@@ -154,4 +155,44 @@ def verification_sandbox_from(
             user=user,
             tmpfs_size=tmpfs_size,
         )
+    )
+
+
+def tracing_from(
+    config: Dict[str, Any],
+    run_dir: Path,
+):
+    from aivp.telemetry.tracing import (
+        TracingSession,
+    )
+
+    raw = config.get(
+        "telemetry",
+        {},
+    )
+
+    if raw is None:
+        raw = {}
+
+    if not isinstance(raw, dict):
+        raise AIVPError(
+            "telemetry must be an object"
+        )
+
+    enabled = raw.get(
+        "otel",
+        False,
+    )
+
+    if not isinstance(enabled, bool):
+        raise AIVPError(
+            "telemetry.otel must be boolean"
+        )
+
+    return TracingSession(
+        enabled=enabled,
+        output_path=(
+            run_dir
+            / "otel-spans.jsonl"
+        ),
     )

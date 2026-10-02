@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import contextlib
 import time
 import uuid
 
@@ -124,33 +125,88 @@ def _invoke_model_call(
     request: ModelRequest,
     durable: Optional[DurableExecution],
     step_id: str,
+    tracing=None,
 ) -> ModelResult:
-    started = time.monotonic()
-
-    result = adapter.invoke(request)
-
-    latency_ms = max(
-        0,
-        round(
-            (
-                time.monotonic()
-                - started
-            )
-            * 1000
+    span_attributes = {
+        "step.id": (
+            f"{durable.run_id}:{step_id}"
+            if durable is not None
+            else step_id
         ),
+        "role": request.role,
+    }
+
+    if durable is not None:
+        span_attributes[
+            "run.id"
+        ] = durable.run_id
+
+    span_context = (
+        tracing.span(
+            "model.call",
+            attributes=span_attributes,
+        )
+        if tracing is not None
+        else contextlib.nullcontext(None)
     )
 
-    cost_usd = result.cost_estimate_usd
+    with span_context as span:
+        started = time.monotonic()
 
-    if (
-        cost_usd is None
-        and durable is not None
-        and durable.pricing_catalog
-        is not None
-    ):
+        result = adapter.invoke(request)
+
+        latency_ms = max(
+            0,
+            round(
+                (
+                    time.monotonic()
+                    - started
+                )
+                * 1000
+            ),
+        )
+
         cost_usd = (
-            durable.pricing_catalog
-            .estimate_cost_usd(
+            result.cost_estimate_usd
+        )
+
+        if (
+            cost_usd is None
+            and durable is not None
+            and durable.pricing_catalog
+            is not None
+        ):
+            cost_usd = (
+                durable.pricing_catalog
+                .estimate_cost_usd(
+                    provider=result.provider,
+                    model=result.model,
+                    input_tokens=(
+                        result.input_tokens
+                    ),
+                    cached_tokens=(
+                        result.cached_tokens
+                    ),
+                    output_tokens=(
+                        result.output_tokens
+                    ),
+                )
+            )
+
+        call_status = (
+            "SUCCEEDED"
+            if result.raw_exit_status == 0
+            else "FAILED"
+        )
+
+        if durable is not None:
+            durable.store.record_model_call(
+                call_id=str(uuid.uuid4()),
+                run_id=durable.run_id,
+                step_id=(
+                    f"{durable.run_id}:"
+                    f"{step_id}"
+                ),
                 provider=result.provider,
                 model=result.model,
                 input_tokens=(
@@ -162,33 +218,63 @@ def _invoke_model_call(
                 output_tokens=(
                     result.output_tokens
                 ),
+                latency_ms=latency_ms,
+                cost_usd=cost_usd,
+                status=call_status,
             )
-        )
 
-    if durable is not None:
-        durable.store.record_model_call(
-            call_id=str(uuid.uuid4()),
-            run_id=durable.run_id,
-            step_id=(
-                f"{durable.run_id}:"
-                f"{step_id}"
-            ),
-            provider=result.provider,
-            model=result.model,
-            input_tokens=result.input_tokens,
-            cached_tokens=result.cached_tokens,
-            output_tokens=result.output_tokens,
-            latency_ms=latency_ms,
-            cost_usd=cost_usd,
-            status=(
-                "SUCCEEDED"
-                if result.raw_exit_status == 0
-                else "FAILED"
-            ),
-        )
+        if span is not None:
+            span.set_attribute(
+                "provider",
+                result.provider,
+            )
+            span.set_attribute(
+                "model",
+                result.model,
+            )
+            span.set_attribute(
+                "status",
+                call_status,
+            )
+            span.set_attribute(
+                "latency_ms",
+                latency_ms,
+            )
 
-    return result
+            if (
+                result.input_tokens
+                is not None
+            ):
+                span.set_attribute(
+                    "input_tokens",
+                    result.input_tokens,
+                )
 
+            if (
+                result.cached_tokens
+                is not None
+            ):
+                span.set_attribute(
+                    "cached_tokens",
+                    result.cached_tokens,
+                )
+
+            if (
+                result.output_tokens
+                is not None
+            ):
+                span.set_attribute(
+                    "output_tokens",
+                    result.output_tokens,
+                )
+
+            if cost_usd is not None:
+                span.set_attribute(
+                    "cost_usd",
+                    cost_usd,
+                )
+
+        return result
 
 def _invoke_edit(
     *,
@@ -226,6 +312,7 @@ def _invoke_edit(
         ),
         durable=durable,
         step_id=log_stem,
+        tracing=runtime.tracing,
     )
 
 
@@ -289,6 +376,7 @@ def _invoke_review(
         step_id=(
             f"claude-review-{review_index}"
         ),
+        tracing=runtime.tracing,
     )
 
     if runtime.dry_run:
@@ -375,6 +463,7 @@ def _invoke_risk(
         ),
         durable=durable,
         step_id="codex-risk",
+        tracing=runtime.tracing,
     )
 
     if runtime.dry_run:
