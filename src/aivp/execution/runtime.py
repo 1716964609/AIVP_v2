@@ -232,39 +232,106 @@ class Runtime:
             timeout_seconds=timeout,
         )
 
-        if self.dry_run:
-            dump_text(
-                self.run_dir
-                / f"{log_stem}.dry-run.txt",
-                (
-                    f"$ {quote_cmd(argv)}\n"
-                    f"CWD={cwd}\n"
-                    f"TIMEOUT={timeout}s\n"
-                ),
-            )
+        span_context = self.tracing.span(
+            "command",
+            attributes={
+                "actor": actor or "command",
+                "tool": actor or "command",
+                "timeout_seconds": timeout,
+            },
+        )
 
-            return subprocess.CompletedProcess(
-                argv,
-                0,
-                stdout="[DRY RUN]\n",
-                stderr="",
-            )
+        with span_context as command_span:
+            if self.dry_run:
+                if command_span is not None:
+                    command_span.set_attribute(
+                        "status",
+                        "DRY_RUN",
+                    )
+                    command_span.set_attribute(
+                        "returncode",
+                        0,
+                    )
+                    command_span.set_attribute(
+                        "elapsed_seconds",
+                        0.0,
+                    )
 
-        started = time.monotonic()
+                dump_text(
+                    self.run_dir
+                    / f"{log_stem}.dry-run.txt",
+                    (
+                        f"$ {quote_cmd(argv)}\n"
+                        f"CWD={cwd}\n"
+                        f"TIMEOUT={timeout}s\n"
+                    ),
+                )
 
-        try:
-            cp = subprocess.run(
-                argv,
-                cwd=str(cwd),
-                input=stdin_text,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=timeout,
-                env=os.environ.copy(),
-            )
+                return subprocess.CompletedProcess(
+                    argv,
+                    0,
+                    stdout="[DRY RUN]\n",
+                    stderr="",
+                )
 
-        except subprocess.TimeoutExpired as exc:
+            started = time.monotonic()
+
+            try:
+                cp = subprocess.run(
+                    argv,
+                    cwd=str(cwd),
+                    input=stdin_text,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout,
+                    env=os.environ.copy(),
+                )
+
+            except subprocess.TimeoutExpired as exc:
+                elapsed = (
+                    time.monotonic()
+                    - started
+                )
+
+                dump_text(
+                    self.run_dir
+                    / f"{log_stem}.stdout.txt",
+                    exc.stdout or "",
+                )
+
+                dump_text(
+                    self.run_dir
+                    / f"{log_stem}.stderr.txt",
+                    exc.stderr or "",
+                )
+
+                if command_span is not None:
+                    command_span.set_attribute(
+                        "status",
+                        "TIMEOUT",
+                    )
+                    command_span.set_attribute(
+                        "elapsed_seconds",
+                        round(elapsed, 3),
+                    )
+
+                self.log_event(
+                    "command_timeout",
+                    actor=actor,
+                    tool=actor or "command",
+                    timeout_seconds=timeout,
+                    elapsed_seconds=round(
+                        elapsed,
+                        3,
+                    ),
+                )
+
+                raise BudgetExceeded(
+                    "Command timed out after "
+                    f"{timeout}s: {argv[0]}"
+                ) from exc
+
             elapsed = (
                 time.monotonic()
                 - started
@@ -273,67 +340,52 @@ class Runtime:
             dump_text(
                 self.run_dir
                 / f"{log_stem}.stdout.txt",
-                exc.stdout or "",
+                cp.stdout,
             )
 
             dump_text(
                 self.run_dir
                 / f"{log_stem}.stderr.txt",
-                exc.stderr or "",
+                cp.stderr,
             )
 
+            if command_span is not None:
+                command_span.set_attribute(
+                    "returncode",
+                    cp.returncode,
+                )
+                command_span.set_attribute(
+                    "elapsed_seconds",
+                    round(elapsed, 3),
+                )
+                command_span.set_attribute(
+                    "status",
+                    (
+                        "SUCCEEDED"
+                        if cp.returncode == 0
+                        else "FAILED"
+                    ),
+                )
+
             self.log_event(
-                "command_timeout",
+                "command_end",
                 actor=actor,
                 tool=actor or "command",
-                timeout_seconds=timeout,
+                returncode=cp.returncode,
                 elapsed_seconds=round(
                     elapsed,
                     3,
                 ),
             )
 
-            raise BudgetExceeded(
-                "Command timed out after "
-                f"{timeout}s: {argv[0]}"
-            ) from exc
+            if check and cp.returncode != 0:
+                raise CommandFailed(
+                    (
+                        f"Command failed "
+                        f"({cp.returncode}): "
+                        f"{quote_cmd(argv)}"
+                    ),
+                    cp.returncode,
+                )
 
-        elapsed = (
-            time.monotonic()
-            - started
-        )
-
-        dump_text(
-            self.run_dir
-            / f"{log_stem}.stdout.txt",
-            cp.stdout,
-        )
-
-        dump_text(
-            self.run_dir
-            / f"{log_stem}.stderr.txt",
-            cp.stderr,
-        )
-
-        self.log_event(
-            "command_end",
-            actor=actor,
-            tool=actor or "command",
-            returncode=cp.returncode,
-            elapsed_seconds=round(
-                elapsed,
-                3,
-            ),
-        )
-
-        if check and cp.returncode != 0:
-            raise CommandFailed(
-                (
-                    f"Command failed "
-                    f"({cp.returncode}): "
-                    f"{quote_cmd(argv)}"
-                ),
-                cp.returncode,
-            )
-
-        return cp
+            return cp
