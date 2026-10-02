@@ -721,6 +721,13 @@ def execute_panel(
                 )
 
         context_text: Optional[str] = None
+        context_path: Optional[Path] = None
+        context_manifest_path: Optional[
+            Path
+        ] = None
+        context_manifest_hash: Optional[
+            str
+        ] = None
 
         context_budget = context_budget_from(
             config
@@ -731,7 +738,7 @@ def execute_panel(
                 run_dir / "context.txt"
             )
 
-            manifest_path = (
+            context_manifest_path = (
                 run_dir
                 / "context-manifest.json"
             )
@@ -751,6 +758,12 @@ def execute_panel(
                     .rendered_context
                 )
 
+                context_manifest_hash = (
+                    compilation
+                    .artifact
+                    .manifest_hash
+                )
+
                 _write_text(
                     artifacts,
                     "context",
@@ -761,14 +774,14 @@ def execute_panel(
                 _write_text(
                     artifacts,
                     "context-manifest",
-                    manifest_path,
+                    context_manifest_path,
                     compilation.manifest_json,
                 )
 
             else:
                 if (
                     not context_path.exists()
-                    or not manifest_path.exists()
+                    or not context_manifest_path.exists()
                 ):
                     raise StateIntegrityError(
                         "Resume context artifact "
@@ -788,7 +801,7 @@ def execute_panel(
 
                 artifacts.register(
                     "context-manifest",
-                    manifest_path,
+                    context_manifest_path,
                 )
 
         try:
@@ -847,6 +860,15 @@ def execute_panel(
                             generation_result
                         ),
                         base_sha=base_sha,
+                        context_path=(
+                            context_path
+                        ),
+                        context_manifest_path=(
+                            context_manifest_path
+                        ),
+                        context_manifest_hash=(
+                            context_manifest_hash
+                        ),
                     )
 
             else:

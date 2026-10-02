@@ -186,6 +186,9 @@ def complete_generation(
     config: Mapping[str, Any],
     model_result: ModelResult,
     base_sha: str,
+    context_path: Optional[Path] = None,
+    context_manifest_path: Optional[Path] = None,
+    context_manifest_hash: Optional[str] = None,
 ) -> None:
     diff_text = capture_diff(
         repo
@@ -214,6 +217,75 @@ def complete_generation(
     diff_hash = sha256_text(
         diff_text
     )
+
+    step_artifacts = [
+        {
+            "artifact_id": artifact_id,
+            "artifact_type": (
+                "generated-diff"
+            ),
+            "path": diff_path,
+            "sha256": artifact_sha,
+            "size_bytes": (
+                diff_path.stat().st_size
+            ),
+        }
+    ]
+
+    context_artifact_ids = []
+
+    for (
+        artifact_type,
+        artifact_path,
+    ) in (
+        (
+            "context",
+            context_path,
+        ),
+        (
+            "context-manifest",
+            context_manifest_path,
+        ),
+    ):
+        if artifact_path is None:
+            continue
+
+        if not artifact_path.is_file():
+            raise StateIntegrityError(
+                "Context artifact missing "
+                f"before generation commit: "
+                f"{artifact_type}"
+            )
+
+        context_artifact_id = (
+            f"{durable.run_id}:"
+            f"{artifact_type}:"
+            f"{durable.attempt}"
+        )
+
+        step_artifacts.append(
+            {
+                "artifact_id": (
+                    context_artifact_id
+                ),
+                "artifact_type": (
+                    artifact_type
+                ),
+                "path": artifact_path,
+                "sha256": sha256_file(
+                    artifact_path
+                ),
+                "size_bytes": (
+                    artifact_path
+                    .stat()
+                    .st_size
+                ),
+            }
+        )
+
+        context_artifact_ids.append(
+            context_artifact_id
+        )
 
     checkpoint = {
         "checkpoint_schema_version": (
@@ -248,8 +320,25 @@ def complete_generation(
             dict(config)
         ),
         "artifact_ids": [
-            artifact_id
+            artifact[
+                "artifact_id"
+            ]
+            for artifact
+            in step_artifacts
         ],
+        "context_artifact_ids": (
+            context_artifact_ids
+        ),
+        **(
+            {
+                "context_manifest_hash": (
+                    context_manifest_hash
+                )
+            }
+            if context_manifest_hash
+            is not None
+            else {}
+        ),
         "counters": dataclasses.asdict(
             runtime.counters
         ),
@@ -289,19 +378,7 @@ def complete_generation(
         retryable=False,
         checkpoint_state="GENERATED",
         checkpoint_payload=checkpoint,
-        artifacts=[
-            {
-                "artifact_id": artifact_id,
-                "artifact_type": (
-                    "generated-diff"
-                ),
-                "path": diff_path,
-                "sha256": artifact_sha,
-                "size_bytes": (
-                    diff_path.stat().st_size
-                ),
-            }
-        ],
+        artifacts=step_artifacts,
     )
 
     _hard_crash_if_requested(
