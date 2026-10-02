@@ -1,3 +1,4 @@
+import json
 import subprocess
 import tempfile
 import unittest
@@ -134,15 +135,34 @@ class DockerVerificationIntegrationTests(
                 "verified\n",
             )
 
-            events = (
+            events_text = (
                 run_dir / "events.json"
             ).read_text(
                 encoding="utf-8"
             )
 
-            self.assertIn(
+            events = json.loads(
+                events_text
+            )
+
+            self.assertEqual(
+                events[0]["kind"],
+                "command_start",
+            )
+
+            self.assertEqual(
+                events[-1]["kind"],
+                "command_end",
+            )
+
+            self.assertEqual(
+                events[-1]["returncode"],
+                0,
+            )
+
+            self.assertNotIn(
                 "docker run",
-                events,
+                events_text,
             )
 
 
