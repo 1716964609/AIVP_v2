@@ -43,6 +43,14 @@ class PricingCatalog:
             models=dict(models),
         )
 
+    def as_dict(
+        self,
+    ) -> Dict[str, Any]:
+        return {
+            "version": self.version,
+            "models": self.models,
+        }
+
     def estimate_cost_usd(
         self,
         *,

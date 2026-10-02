@@ -43,9 +43,66 @@ from aivp.state.sqlite import (
     SQLiteStateStore,
 )
 from aivp.structured import load_structured
+from aivp.artifacts.io import dump_json
+from aivp.telemetry.pricing import (
+    PricingCatalog,
+)
 from aivp.verification.deterministic import (
     DeterministicVerifier,
 )
+
+
+def _pricing_catalog_from_config(
+    *,
+    config: Dict[str, Any],
+    repo: Path,
+    snapshot_path: Path,
+) -> Optional[PricingCatalog]:
+    raw = config.get("pricing")
+
+    if raw is None:
+        return None
+
+    if not isinstance(raw, dict):
+        raise AIVPError(
+            "pricing must be an object"
+        )
+
+    raw_file = raw.get("file")
+
+    if raw_file is None:
+        return None
+
+    if (
+        not isinstance(raw_file, str)
+        or not raw_file.strip()
+    ):
+        raise AIVPError(
+            "pricing.file must be "
+            "a non-empty string"
+        )
+
+    pricing_path = Path(
+        raw_file
+    ).expanduser()
+
+    if not pricing_path.is_absolute():
+        pricing_path = (
+            repo / pricing_path
+        )
+
+    pricing_path = pricing_path.resolve()
+
+    catalog = PricingCatalog.load(
+        pricing_path
+    )
+
+    dump_json(
+        snapshot_path,
+        catalog.as_dict(),
+    )
+
+    return catalog
 
 
 def new_run_id() -> str:
@@ -194,11 +251,25 @@ def run_new(
     with SQLiteStateStore(
         state_db
     ) as store:
+        pricing_catalog = (
+            _pricing_catalog_from_config(
+                config=config,
+                repo=repo,
+                snapshot_path=(
+                    run_dir
+                    / "pricing-catalog.json"
+                ),
+            )
+        )
+
         durable = DurableExecution(
             store=store,
             run_id=selected_run_id,
             canonical_repo_path=(
                 worktree.canonical_repo
+            ),
+            pricing_catalog=(
+                pricing_catalog
             ),
         )
 
@@ -306,11 +377,27 @@ def resume_run(
             ),
         )
 
+        pricing_snapshot = (
+            run_dir
+            / "pricing-catalog.json"
+        )
+
+        pricing_catalog = (
+            PricingCatalog.load(
+                pricing_snapshot
+            )
+            if pricing_snapshot.exists()
+            else None
+        )
+
         durable = DurableExecution(
             store=store,
             run_id=run_id,
             canonical_repo_path=(
                 canonical_repo
+            ),
+            pricing_catalog=(
+                pricing_catalog
             ),
             attempt=(
                 int(
