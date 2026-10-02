@@ -319,6 +319,122 @@ class HarnessPanelTests(
                 1,
             )
 
+    def test_budget_exceeded_writes_human_required_summary(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            run_dir = root / "run"
+            run_dir.mkdir()
+
+            runtime = Runtime(
+                run_dir,
+                Budgets(
+                    codex_max_calls=0,
+                ),
+            )
+
+            verifier = FakeVerifier(
+                [passed()]
+            )
+
+            result = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                canonical_repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=FakeModel(
+                    runtime,
+                    "codex",
+                    ["generated"],
+                ),
+                reviewer=FakeModel(
+                    runtime,
+                    "claude",
+                    [],
+                ),
+                risk_judge=FakeModel(
+                    runtime,
+                    "codex",
+                    [],
+                ),
+                verifier=verifier,
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            self.assertEqual(
+                result,
+                run_dir,
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertTrue(
+                status["metrics"][
+                    "budget_exceeded"
+                ]
+            )
+
+            summary = json.loads(
+                (
+                    run_dir
+                    / "run-summary.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                summary["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertIn(
+                "time",
+                summary,
+            )
+
+            self.assertIn(
+                "tokens",
+                summary,
+            )
+
+            self.assertIn(
+                "cost",
+                summary,
+            )
+
+            self.assertEqual(
+                summary["model_calls"][
+                    "count"
+                ],
+                0,
+            )
+
+            self.assertEqual(
+                verifier.calls,
+                0,
+            )
+
+
     def test_execution_repo_isolated_from_canonical_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

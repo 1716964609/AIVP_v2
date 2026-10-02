@@ -207,6 +207,35 @@ class PolicyTerminalOutcomeTests(
                     expected_status,
                 )
 
+                summary = json.loads(
+                    (
+                        run_dir
+                        / "run-summary.json"
+                    ).read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+                self.assertEqual(
+                    summary["status"],
+                    expected_status,
+                )
+
+                self.assertIn(
+                    "time",
+                    summary,
+                )
+
+                self.assertIn(
+                    "tokens",
+                    summary,
+                )
+
+                self.assertIn(
+                    "cost",
+                    summary,
+                )
+
                 checkpoint = store.load(
                     "run-policy"
                 )
