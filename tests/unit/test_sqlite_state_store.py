@@ -355,5 +355,77 @@ class SQLiteStateStoreTests(
                     )
 
 
+    def test_model_call_ledger_round_trip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "state.db"
+
+            with SQLiteStateStore(db_path) as store:
+                store.begin_run(
+                    run_id="run-model",
+                    repo_path=Path(tmp),
+                    base_sha="base",
+                    current_state="GENERATING",
+                )
+
+                store.record_model_call(
+                    call_id="call-1",
+                    run_id="run-model",
+                    step_id="generate-1",
+                    provider="openai",
+                    model="test-model",
+                    input_tokens=100,
+                    cached_tokens=25,
+                    output_tokens=40,
+                    latency_ms=1234,
+                    cost_usd=0.0123,
+                    status="SUCCEEDED",
+                )
+
+                rows = store.model_calls_for_run(
+                    "run-model"
+                )
+
+                self.assertEqual(len(rows), 1)
+
+                row = rows[0]
+
+                self.assertEqual(
+                    row["call_id"],
+                    "call-1",
+                )
+                self.assertEqual(
+                    row["provider"],
+                    "openai",
+                )
+                self.assertEqual(
+                    row["model"],
+                    "test-model",
+                )
+                self.assertEqual(
+                    row["input_tokens"],
+                    100,
+                )
+                self.assertEqual(
+                    row["cached_tokens"],
+                    25,
+                )
+                self.assertEqual(
+                    row["output_tokens"],
+                    40,
+                )
+                self.assertEqual(
+                    row["latency_ms"],
+                    1234,
+                )
+                self.assertAlmostEqual(
+                    row["cost_usd"],
+                    0.0123,
+                )
+                self.assertEqual(
+                    row["status"],
+                    "SUCCEEDED",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

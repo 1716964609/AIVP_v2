@@ -255,6 +255,71 @@ class SQLiteStateStore:
             ).fetchall()
         )
 
+    def record_model_call(
+        self,
+        *,
+        call_id: str,
+        run_id: str,
+        step_id: str,
+        provider: str,
+        model: str,
+        input_tokens: Optional[int],
+        cached_tokens: Optional[int],
+        output_tokens: Optional[int],
+        latency_ms: Optional[int],
+        cost_usd: Optional[float],
+        status: str,
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO model_calls(
+                call_id,
+                run_id,
+                step_id,
+                provider,
+                model,
+                input_tokens,
+                cached_tokens,
+                output_tokens,
+                latency_ms,
+                cost_usd,
+                status
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                call_id,
+                run_id,
+                step_id,
+                provider,
+                model,
+                input_tokens,
+                cached_tokens,
+                output_tokens,
+                latency_ms,
+                cost_usd,
+                status,
+            ),
+        )
+
+        self.connection.commit()
+
+    def model_calls_for_run(
+        self,
+        run_id: str,
+    ) -> list[sqlite3.Row]:
+        return list(
+            self.connection.execute(
+                """
+                SELECT *
+                FROM model_calls
+                WHERE run_id = ?
+                ORDER BY rowid
+                """,
+                (run_id,),
+            ).fetchall()
+        )
+
     def complete_step(
         self,
         *,

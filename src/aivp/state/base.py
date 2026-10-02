@@ -62,3 +62,26 @@ class DurableStateStore(
         run_id: str,
     ) -> Sequence[Mapping[str, Any]]:
         ...
+
+    def record_model_call(
+        self,
+        *,
+        call_id: str,
+        run_id: str,
+        step_id: str,
+        provider: str,
+        model: str,
+        input_tokens: Optional[int],
+        cached_tokens: Optional[int],
+        output_tokens: Optional[int],
+        latency_ms: Optional[int],
+        cost_usd: Optional[float],
+        status: str,
+    ) -> None:
+        ...
+
+    def model_calls_for_run(
+        self,
+        run_id: str,
+    ) -> Sequence[Mapping[str, Any]]:
+        ...
