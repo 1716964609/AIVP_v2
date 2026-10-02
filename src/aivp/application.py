@@ -130,53 +130,90 @@ def _execute(
         DurableExecution
     ],
 ) -> Path:
-    policy = v2_default_policy()
-
-    generator = CodexAdapter(
-        runtime,
-        config,
+    run_id = (
+        durable.run_id
+        if durable is not None
+        else runtime.run_dir.name
     )
 
-    reviewer = ClaudeAdapter(
-        runtime,
-        config,
-    )
+    with runtime.tracing.span(
+        "run",
+        attributes={
+            "run.id": run_id,
+            "dry_run": runtime.dry_run,
+        },
+    ) as run_span:
+        policy = v2_default_policy()
 
-    risk_judge = CodexAdapter(
-        runtime,
-        config,
-    )
+        generator = CodexAdapter(
+            runtime,
+            config,
+        )
 
-    verifier = DeterministicVerifier(
-        runtime,
-        sandbox=(
-            verification_sandbox_from(
-                config
-            )
-        ),
-        policy=policy,
-    )
+        reviewer = ClaudeAdapter(
+            runtime,
+            config,
+        )
 
-    risk_engine = (
-        LegacyCompatibleRiskEngine()
-    )
+        risk_judge = CodexAdapter(
+            runtime,
+            config,
+        )
 
-    return execute_panel(
-        runtime=runtime,
-        repo=repo,
-        canonical_repo=canonical_repo,
-        task=task,
-        config=config,
-        generator=generator,
-        reviewer=reviewer,
-        risk_judge=risk_judge,
-        verifier=verifier,
-        risk_engine=risk_engine,
-        artifacts=ArtifactRegistry(),
-        durable=durable,
-        policy=policy,
-    )
+        verifier = DeterministicVerifier(
+            runtime,
+            sandbox=(
+                verification_sandbox_from(
+                    config
+                )
+            ),
+            policy=policy,
+        )
 
+        risk_engine = (
+            LegacyCompatibleRiskEngine()
+        )
+
+        result = execute_panel(
+            runtime=runtime,
+            repo=repo,
+            canonical_repo=canonical_repo,
+            task=task,
+            config=config,
+            generator=generator,
+            reviewer=reviewer,
+            risk_judge=risk_judge,
+            verifier=verifier,
+            risk_engine=risk_engine,
+            artifacts=ArtifactRegistry(),
+            durable=durable,
+            policy=policy,
+        )
+
+        if run_span is not None:
+            for event in reversed(
+                runtime.events
+            ):
+                if (
+                    event.get("kind")
+                    == "run_end"
+                ):
+                    status = event.get(
+                        "status"
+                    )
+
+                    if isinstance(
+                        status,
+                        str,
+                    ):
+                        run_span.set_attribute(
+                            "status",
+                            status,
+                        )
+
+                    break
+
+        return result
 
 def run_new(
     *,
