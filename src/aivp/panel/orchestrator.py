@@ -22,6 +22,12 @@ from aivp.errors import (
     PolicyDenied,
     StateIntegrityError,
 )
+from aivp.context.base import (
+    ContextRequest,
+)
+from aivp.context.compiler import (
+    compile_context,
+)
 from aivp.execution.runtime import Runtime
 from aivp.models.base import (
     ModelAdapter,
@@ -36,7 +42,10 @@ from aivp.models.claude_adapter import ClaudeAdapter
 from aivp.models.codex import codex_risk_schema
 from aivp.models.codex_adapter import CodexAdapter
 from aivp.models.parsing import extract_json_object
-from aivp.panel.config import budgets_from
+from aivp.panel.config import (
+    budgets_from,
+    context_budget_from,
+)
 from aivp.panel.prompts import (
     fix_prompt,
     generate_prompt,
@@ -711,11 +720,83 @@ def execute_panel(
                     canonical_repo
                 )
 
+        context_text: Optional[str] = None
+
+        context_budget = context_budget_from(
+            config
+        )
+
+        if context_budget is not None:
+            context_path = (
+                run_dir / "context.txt"
+            )
+
+            manifest_path = (
+                run_dir
+                / "context-manifest.json"
+            )
+
+            if resume_plan is None:
+                compilation = compile_context(
+                    ContextRequest(
+                        repo=repo,
+                        task_text=task_text,
+                        budget=context_budget,
+                    )
+                )
+
+                context_text = (
+                    compilation
+                    .artifact
+                    .rendered_context
+                )
+
+                _write_text(
+                    artifacts,
+                    "context",
+                    context_path,
+                    context_text,
+                )
+
+                _write_text(
+                    artifacts,
+                    "context-manifest",
+                    manifest_path,
+                    compilation.manifest_json,
+                )
+
+            else:
+                if (
+                    not context_path.exists()
+                    or not manifest_path.exists()
+                ):
+                    raise StateIntegrityError(
+                        "Resume context artifact "
+                        "is missing"
+                    )
+
+                context_text = (
+                    context_path.read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+                artifacts.register(
+                    "context",
+                    context_path,
+                )
+
+                artifacts.register(
+                    "context-manifest",
+                    manifest_path,
+                )
+
         try:
             if resume_plan is None:
                 initial_prompt = (
                     generate_prompt(
-                        task_text
+                        task_text,
+                        context_text=context_text,
                     )
                 )
 
@@ -950,6 +1031,7 @@ def execute_panel(
                     prompt = fix_prompt(
                         task_text,
                         verification=verification,
+                        context_text=context_text,
                     )
 
                     stem = (
@@ -1031,6 +1113,7 @@ def execute_panel(
                 prompt = fix_prompt(
                     task_text,
                     review=review,
+                    context_text=context_text,
                 )
 
                 stem = (
