@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import time
+import uuid
 
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -116,6 +118,55 @@ def _write_text(
     )
 
 
+def _invoke_model_call(
+    *,
+    adapter: ModelAdapter,
+    request: ModelRequest,
+    durable: Optional[DurableExecution],
+    step_id: str,
+) -> ModelResult:
+    started = time.monotonic()
+
+    result = adapter.invoke(request)
+
+    latency_ms = max(
+        0,
+        round(
+            (
+                time.monotonic()
+                - started
+            )
+            * 1000
+        ),
+    )
+
+    if durable is not None:
+        durable.store.record_model_call(
+            call_id=str(uuid.uuid4()),
+            run_id=durable.run_id,
+            step_id=(
+                f"{durable.run_id}:"
+                f"{step_id}"
+            ),
+            provider=result.provider,
+            model=result.model,
+            input_tokens=result.input_tokens,
+            cached_tokens=result.cached_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=latency_ms,
+            cost_usd=(
+                result.cost_estimate_usd
+            ),
+            status=(
+                "SUCCEEDED"
+                if result.raw_exit_status == 0
+                else "FAILED"
+            ),
+        )
+
+    return result
+
+
 def _invoke_edit(
     *,
     adapter: ModelAdapter,
@@ -125,6 +176,7 @@ def _invoke_edit(
     log_stem: str,
     role: str,
     policy: StaticCapabilityPolicy,
+    durable: Optional[DurableExecution],
 ) -> ModelResult:
     policy.authorize(
         CapabilityRequest(
@@ -137,8 +189,9 @@ def _invoke_edit(
         )
     )
 
-    return adapter.invoke(
-        ModelRequest(
+    return _invoke_model_call(
+        adapter=adapter,
+        request=ModelRequest(
             role=role,
             prompt=prompt,
             repo=repo,
@@ -147,7 +200,9 @@ def _invoke_edit(
                 .codex_timeout_seconds
             ),
             log_stem=log_stem,
-        )
+        ),
+        durable=durable,
+        step_id=log_stem,
     )
 
 
@@ -162,6 +217,7 @@ def _invoke_review(
     verification: Dict[str, Any],
     review_index: int,
     policy: StaticCapabilityPolicy,
+    durable: Optional[DurableExecution],
 ) -> Dict[str, Any]:
     policy.authorize(
         CapabilityRequest(
@@ -192,8 +248,9 @@ def _invoke_review(
         prompt,
     )
 
-    result = adapter.invoke(
-        ModelRequest(
+    result = _invoke_model_call(
+        adapter=adapter,
+        request=ModelRequest(
             role="reviewer",
             prompt=prompt,
             repo=repo,
@@ -204,7 +261,11 @@ def _invoke_review(
             log_stem=(
                 f"claude-review-{review_index}"
             ),
-        )
+        ),
+        durable=durable,
+        step_id=(
+            f"claude-review-{review_index}"
+        ),
     )
 
     if runtime.dry_run:
@@ -258,6 +319,7 @@ def _invoke_risk(
     task_text: str,
     diff_text: str,
     policy: StaticCapabilityPolicy,
+    durable: Optional[DurableExecution],
 ) -> Dict[str, Any]:
     policy.authorize(
         CapabilityRequest(
@@ -270,8 +332,9 @@ def _invoke_risk(
         )
     )
 
-    result = adapter.invoke(
-        ModelRequest(
+    result = _invoke_model_call(
+        adapter=adapter,
+        request=ModelRequest(
             role="risk",
             prompt=risk_prompt(
                 task_text,
@@ -286,7 +349,9 @@ def _invoke_risk(
             output_schema=(
                 codex_risk_schema()
             ),
-        )
+        ),
+        durable=durable,
+        step_id="codex-risk",
     )
 
     if runtime.dry_run:
@@ -515,6 +580,7 @@ def execute_panel(
                         ),
                         role="generator",
                         policy=policy,
+                        durable=durable,
                     )
                 )
 
@@ -739,6 +805,7 @@ def execute_panel(
                         log_stem=stem,
                         role="fixer",
                         policy=policy,
+                        durable=durable,
                     )
 
                     continue
@@ -766,6 +833,7 @@ def execute_panel(
                     verification=verification,
                     review_index=review_index,
                     policy=policy,
+                    durable=durable,
                 )
 
                 review_index += 1
@@ -818,6 +886,7 @@ def execute_panel(
                     log_stem=stem,
                     role="fixer",
                     policy=policy,
+                    durable=durable,
                 )
 
             if escalation_reason is None:
@@ -860,6 +929,7 @@ def execute_panel(
                     task_text=task_text,
                     diff_text=final_diff,
                     policy=policy,
+                    durable=durable,
                 )
 
                 assessed = (
