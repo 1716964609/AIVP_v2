@@ -11,3 +11,13 @@ __all__ = [
     "ContextEntry",
     "ContextRequest",
 ]
+
+from aivp.context.repo_map import (
+    RepoMapEntry,
+    build_repo_map,
+)
+
+__all__ += [
+    "RepoMapEntry",
+    "build_repo_map",
+]
