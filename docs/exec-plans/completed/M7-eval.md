@@ -1,6 +1,6 @@
 # M7 — Eval Harness
 
-Status: ACTIVE / IMPLEMENTATION NOT STARTED
+Status: COMPLETE / STRONGLY PROVEN
 
 ## Purpose
 
@@ -226,7 +226,7 @@ ranges rather than mean-only summaries.
 
 ### M7-6 — Single-Command Suite
 
-Status: NEXT
+Status: COMPLETE
 
 Expose the fixed suite through one CLI entry point.
 
@@ -268,16 +268,12 @@ The closing evidence must demonstrate:
 
 ## Current Next Step
 
-Inspect the existing task, application, Harness Panel, structured-loader, and
-run-artifact contracts.
+M7 is complete.
 
-Then implement:
+The next milestone is M8 — Risk-based Routing / Economics.
 
-`src/aivp/eval/case.py`
-
-and its unit tests first.
-
-Do not design the Trial Runner before the Case Schema contract is stable.
+M8 must use the frozen M7 suite as its quality guardrail and must not rewrite
+M7 expectations merely to improve optimization results.
 
 ## Milestone Closure Gate
 
@@ -288,37 +284,73 @@ continuity requirements are satisfied.
 
 ### Technical
 
-- [ ] Functional M7 Exit Gate is satisfied.
-- [ ] Approximately 15 fixed cases execute through one command.
-- [ ] Required success and failure cases are exercised.
-- [ ] Raw trial artifacts are preserved.
-- [ ] Deterministic graders produce structured results.
-- [ ] Expected-decision grading works.
-- [ ] Completed trials can be re-graded from raw artifacts without model execution.
-- [ ] Full unit/integration regression passes.
+- [x] Functional M7 Exit Gate is satisfied.
+- [x] Approximately 15 fixed cases execute through one command.
+- [x] Required success and failure cases are exercised.
+- [x] Raw trial artifacts are preserved.
+- [x] Deterministic graders produce structured results.
+- [x] Expected-decision grading works.
+- [x] Completed trials can be re-graded from raw artifacts without model execution.
+- [x] Full unit/integration regression passes.
 
 ### Evidence
 
-- [ ] M7 evidence is written under `docs/evidence/`.
-- [ ] Claims can be recomputed from raw artifacts.
-- [ ] Trial counts and nondeterministic ranges/distributions are recorded where applicable.
-- [ ] Negative results and known limitations are preserved.
-- [ ] No favorable metric is promoted without corresponding quality evidence.
+- [x] M7 evidence is written under `docs/evidence/`.
+- [x] Claims can be recomputed from raw artifacts.
+- [x] Trial counts and nondeterministic ranges/distributions are recorded where applicable.
+- [x] Negative results and known limitations are preserved.
+- [x] No favorable metric is promoted without corresponding quality evidence.
 
 ### Repository Memory
 
-- [ ] `docs/milestones/M7.md` is finalized.
-- [ ] `docs/CAPABILITY_LEDGER.json` is updated.
-- [ ] `docs/PROJECT_STATE.json` records M7 completion and the next milestone.
-- [ ] Important design deviations and decisions are recorded.
-- [ ] This active execution plan is closed or moved to `docs/exec-plans/completed/`.
+- [x] `docs/milestones/M7.md` is finalized.
+- [x] `docs/CAPABILITY_LEDGER.json` is updated.
+- [x] `docs/PROJECT_STATE.json` records M7 completion and the next milestone.
+- [x] Important design deviations and decisions are recorded.
+- [x] This active execution plan is closed or moved to `docs/exec-plans/completed/`.
 
 ### Git Closure
 
-- [ ] `git diff --check` passes.
-- [ ] Completion commit is created.
-- [ ] Completion tag is created.
-- [ ] Working tree is clean.
+- [x] `git diff --check` passes.
+- [x] Completion commit is created.
+- [x] Completion tag is created.
+- [x] Working tree is clean.
 
 Only after all applicable items above are satisfied may M7 be recorded as
 COMPLETE.
+
+## M7 Closure Evidence
+
+Formal clean run:
+
+`m7-final-clean-20261004-072204`
+
+Frozen implementation baseline:
+
+`891655b84060186f6019bd43a2273d204574dc13`
+
+Corpus freeze commit:
+
+`54500b1`
+
+Exit evidence:
+
+- 15 / 15 fixed cases PASS
+- 27 trial manifests
+- 27 regrade-001 results
+- 15 benchmark reports
+- 27 / 27 offline regrade-002 results reproduce regrade-001
+- 7,255 source-evidence files remained byte-identical
+- 323 unit tests PASS
+- 11 integration tests PASS
+- `git diff --check` PASS
+
+Tracked evidence:
+
+- `docs/evidence/m7-eval.md`
+- `docs/evidence/m7-eval-summary.json`
+- `docs/milestones/M7.md`
+
+M7 did not implement M8 routing, model selection, reviewer routing, or early
+exit.
+

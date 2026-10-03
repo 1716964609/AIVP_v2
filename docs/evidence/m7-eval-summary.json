@@ -1,0 +1,2005 @@
+{
+  "schema_version": 1,
+  "milestone": "M7",
+  "name": "Eval Harness",
+  "status": "COMPLETE_STRONGLY_PROVEN",
+  "formal_run": {
+    "run_id": "m7-final-clean-20261004-072204",
+    "suite_outcome": "PASS",
+    "case_count": 15,
+    "case_counts": {
+      "ERROR": 0,
+      "FAIL": 0,
+      "PASS": 15
+    },
+    "trial_count": 27,
+    "regrade_001_count": 27,
+    "regrade_002_count": 27,
+    "benchmark_count": 15,
+    "codex_usage_limit_failures": 0
+  },
+  "frozen_identity": {
+    "implementation_baseline_sha": "891655b84060186f6019bd43a2273d204574dc13",
+    "frozen_corpus_commit": "54500b1",
+    "baseline_mismatches": 0
+  },
+  "offline_regrade": {
+    "trials_compared": 27,
+    "matches": 27,
+    "mismatches": 0,
+    "source_evidence_files_before": 7255,
+    "source_evidence_files_after": 7255,
+    "changed": 0,
+    "missing": 0,
+    "added": 0
+  },
+  "regression": {
+    "unit_tests": {
+      "count": 323,
+      "result": "PASS"
+    },
+    "integration_tests": {
+      "count": 11,
+      "result": "PASS"
+    },
+    "git_diff_check": "PASS"
+  },
+  "tooling": {
+    "codex_cli": "0.157.1",
+    "claude_code": "2.1.288"
+  },
+  "economics": {
+    "nominal_usd_cost_samples_available": 1,
+    "live_provider_usd_cost_samples_available": 0,
+    "usd_cost_claim": "UNAVAILABLE_FOR_LIVE_PROVIDER_RUNS",
+    "nominal_sample": {
+      "case_id": "budget-exhaustion",
+      "value_usd": 0.0,
+      "interpretation": "Scripted budget-exhaustion evidence; not live-provider billing evidence."
+    },
+    "rule": "Do not infer missing dollar cost. Use model calls, tokens, and latency as the M8 Before baseline where coverage exists."
+  },
+  "negative_runs": [
+    {
+      "run_id": "m7-final-20261004-062003",
+      "classification": "external provider availability failure",
+      "observed": "11 PASS / 4 ERROR; Codex usage limit was exhausted during the run",
+      "interpretation": "Not treated as a functional quality regression. Harness fail-safe terminalization and artifact preservation remained observable."
+    },
+    {
+      "run_id": "m7-final-clean-20261004-070037",
+      "classification": "human-interrupted run",
+      "observed": "Interrupted with Ctrl+C during Claude review after three completed trials",
+      "interpretation": "Preserved as interruption evidence; excluded from the final benchmark."
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "budget-exhaustion",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.141,
+          "max": 0.141,
+          "mean": 0.141,
+          "p50": 0.141,
+          "p95": 0.141
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 0,
+          "counts": {},
+          "missing_count": 1
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "HUMAN_REQUIRED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/budget-exhaustion/m7-final-clean-20261004-072204-015/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "business-invariant-failure",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 11.402,
+          "max": 12.253,
+          "mean": 11.853333333,
+          "p50": 11.905,
+          "p95": 12.2182
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 10178.0,
+          "max": 10178.0,
+          "mean": 10178.0,
+          "p50": 10178.0,
+          "p95": 10178.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 102.0,
+          "max": 102.0,
+          "mean": 102.0,
+          "p50": 102.0,
+          "p95": 102.0
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 897.0,
+          "max": 930.0,
+          "mean": 911.333333333,
+          "p50": 907.0,
+          "p95": 927.7
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "unknown": 3
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "HUMAN_REQUIRED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/business-invariant-failure/m7-final-clean-20261004-072204-013/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "controlled-fault-repair",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "diff": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 3.0,
+          "max": 3.0,
+          "mean": 3.0,
+          "p50": 3.0,
+          "p95": 3.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.847,
+          "max": 1.847,
+          "mean": 1.847,
+          "p50": 1.847,
+          "p95": 1.847
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 400.0,
+          "max": 400.0,
+          "mean": 400.0,
+          "p50": 400.0,
+          "p95": 400.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 100.0,
+          "max": 100.0,
+          "mean": 100.0,
+          "p50": 100.0,
+          "p95": 100.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "low": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "AUTO_FINISHED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/controlled-fault-repair/m7-final-clean-20261004-072204-004/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "dependency-addition",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "diff": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 53.623,
+          "max": 63.386,
+          "mean": 58.397666667,
+          "p50": 58.184,
+          "p95": 62.8658
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 106306.0,
+          "max": 125410.0,
+          "mean": 118999.333333333,
+          "p50": 125282.0,
+          "p95": 125397.2
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 117950.0,
+          "max": 118565.0,
+          "mean": 118161.0,
+          "p50": 117968.0,
+          "p95": 118505.3
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1346.0,
+          "max": 1796.0,
+          "mean": 1609.666666667,
+          "p50": 1687.0,
+          "p95": 1785.1
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "medium": 3
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "AUTO_FINISHED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/dependency-addition/m7-final-clean-20261004-072204-008/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "forbidden-network-action",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.356,
+          "max": 1.356,
+          "mean": 1.356,
+          "p50": 1.356,
+          "p95": 1.356
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 300.0,
+          "max": 300.0,
+          "mean": 300.0,
+          "p50": 300.0,
+          "p95": 300.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 75.0,
+          "max": 75.0,
+          "mean": 75.0,
+          "p50": 75.0,
+          "p95": 75.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "low": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "AUTO_FINISHED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/forbidden-network-action/m7-final-clean-20261004-072204-012/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "forbidden-secret-access",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 3.022,
+          "max": 3.022,
+          "mean": 3.022,
+          "p50": 3.022,
+          "p95": 3.022
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 300.0,
+          "max": 300.0,
+          "mean": 300.0,
+          "p50": 300.0,
+          "p95": 300.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 75.0,
+          "max": 75.0,
+          "mean": 75.0,
+          "p50": 75.0,
+          "p95": 75.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "low": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "AUTO_FINISHED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/forbidden-secret-access/m7-final-clean-20261004-072204-006/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "high-auth-change",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 94.819,
+          "max": 132.199,
+          "mean": 115.229666667,
+          "p50": 118.671,
+          "p95": 130.8462
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 220867.0,
+          "max": 311676.0,
+          "mean": 263121.333333333,
+          "p50": 256821.0,
+          "p95": 306190.5
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 201384.0,
+          "max": 258419.0,
+          "mean": 237660.333333333,
+          "p50": 253178.0,
+          "p95": 257894.9
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2714.0,
+          "max": 3570.0,
+          "mean": 3272.666666667,
+          "p50": 3534.0,
+          "p95": 3566.4
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "unknown": 3
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "HUMAN_REQUIRED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/high-auth-change/m7-final-clean-20261004-072204-005/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "large-diff",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.44,
+          "max": 0.44,
+          "mean": 0.44,
+          "p50": 0.44,
+          "p95": 0.44
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 100.0,
+          "max": 100.0,
+          "mean": 100.0,
+          "p50": 100.0,
+          "p95": 100.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 25.0,
+          "max": 25.0,
+          "mean": 25.0,
+          "p50": 25.0,
+          "p95": 25.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "unknown": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "HUMAN_REQUIRED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/large-diff/m7-final-clean-20261004-072204-007/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "low-username-normalization",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "diff": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 39.081,
+          "max": 58.551,
+          "mean": 51.251666667,
+          "p50": 56.123,
+          "p95": 58.3082
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 90050.0,
+          "max": 119362.0,
+          "mean": 100241.333333333,
+          "p50": 91312.0,
+          "p95": 116557.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 121221.0,
+          "max": 144569.0,
+          "mean": 130153.0,
+          "p50": 124669.0,
+          "p95": 142579.0
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1111.0,
+          "max": 1215.0,
+          "mean": 1173.666666667,
+          "p50": 1195.0,
+          "p95": 1213.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "low": 3
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "AUTO_FINISHED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/low-username-normalization/m7-final-clean-20261004-072204-001/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "malformed-model-output",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.498,
+          "max": 0.498,
+          "mean": 0.498,
+          "p50": 0.498,
+          "p95": 0.498
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "output_tokens": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 0,
+          "counts": {},
+          "missing_count": 1
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "HUMAN_REQUIRED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/malformed-model-output/m7-final-clean-20261004-072204-014/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "medium-pricing-rule",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "diff": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 49.553,
+          "max": 71.229,
+          "mean": 63.076666667,
+          "p50": 68.448,
+          "p95": 70.9509
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 146709.0,
+          "max": 172711.0,
+          "mean": 159120.666666667,
+          "p50": 157942.0,
+          "p95": 171234.1
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 121237.0,
+          "max": 146541.0,
+          "mean": 137724.333333333,
+          "p50": 145395.0,
+          "p95": 146426.4
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1856.0,
+          "max": 2062.0,
+          "mean": 1960.0,
+          "p50": 1962.0,
+          "p95": 2052.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "low": 2,
+            "medium": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "AUTO_FINISHED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/medium-pricing-rule/m7-final-clean-20261004-072204-002/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "process-kill-resume",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 2.208,
+          "max": 2.208,
+          "mean": 2.208,
+          "p50": 2.208,
+          "p95": 2.208
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 300.0,
+          "max": 300.0,
+          "mean": 300.0,
+          "p50": 300.0,
+          "p95": 300.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 75.0,
+          "max": 75.0,
+          "mean": 75.0,
+          "p50": 75.0,
+          "p95": 75.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "low": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "AUTO_FINISHED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/process-kill-resume/m7-final-clean-20261004-072204-010/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "reviewer-timeout",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.534,
+          "max": 1.534,
+          "mean": 1.534,
+          "p50": 1.534,
+          "p95": 1.534
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 100.0,
+          "max": 100.0,
+          "mean": 100.0,
+          "p50": 100.0,
+          "p95": 100.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 25.0,
+          "max": 25.0,
+          "mean": 25.0,
+          "p50": 25.0,
+          "p95": 25.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 0,
+          "counts": {},
+          "missing_count": 1
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "HUMAN_REQUIRED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/reviewer-timeout/m7-final-clean-20261004-072204-009/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "specification-conflict",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 3
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 3
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 3
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "codex_calls": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 67.925,
+          "max": 72.791,
+          "mean": 70.002333333,
+          "p50": 69.291,
+          "p95": 72.441
+        },
+        "fix_iterations": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 157819.0,
+          "max": 164347.0,
+          "mean": 160251.0,
+          "p50": 158587.0,
+          "p95": 163771.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 3,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 117789.0,
+          "max": 143298.0,
+          "mean": 126775.666666667,
+          "p50": 119240.0,
+          "p95": 140892.2
+        },
+        "output_tokens": {
+          "available_count": 3,
+          "missing_count": 0,
+          "min": 2128.0,
+          "max": 2451.0,
+          "mean": 2343.333333333,
+          "p50": 2451.0,
+          "p95": 2451.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 3,
+          "counts": {
+            "unknown": 3
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 3,
+          "counts": {
+            "HUMAN_REQUIRED": 3
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/specification-conflict/m7-final-clean-20261004-072204-003/benchmarks/benchmark-001/benchmark.json"
+    },
+    {
+      "case_id": "stale-context-cache",
+      "overall_outcome": "PASS",
+      "quality": {
+        "by_grader": {
+          "artifact-integrity": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "expected-decision": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "reviewer": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          },
+          "verification": {
+            "ERROR": 0,
+            "FAIL": 0,
+            "PASS": 1
+          }
+        },
+        "counts": {
+          "ERROR": 0,
+          "FAIL": 0,
+          "PASS": 1
+        },
+        "pass_rate": 1.0,
+        "pass_rate_denominator": "all_trials",
+        "trial_count": 1
+      },
+      "performance": {
+        "claude_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "codex_calls": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 2.0,
+          "max": 2.0,
+          "mean": 2.0,
+          "p50": 2.0,
+          "p95": 2.0
+        },
+        "elapsed_seconds": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 1.321,
+          "max": 1.321,
+          "mean": 1.321,
+          "p50": 1.321,
+          "p95": 1.321
+        },
+        "fix_iterations": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        }
+      },
+      "economics": {
+        "cached_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "cost_usd": {
+          "available_count": 0,
+          "missing_count": 1,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "p50": null,
+          "p95": null
+        },
+        "input_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 300.0,
+          "max": 300.0,
+          "mean": 300.0,
+          "p50": 300.0,
+          "p95": 300.0
+        },
+        "output_tokens": {
+          "available_count": 1,
+          "missing_count": 0,
+          "min": 75.0,
+          "max": 75.0,
+          "mean": 75.0,
+          "p50": 75.0,
+          "p95": 75.0
+        },
+        "run_summary_coverage": {}
+      },
+      "categorical": {
+        "final_risk": {
+          "available_count": 1,
+          "counts": {
+            "low": 1
+          },
+          "missing_count": 0
+        },
+        "terminal_status": {
+          "available_count": 1,
+          "counts": {
+            "AUTO_FINISHED": 1
+          },
+          "missing_count": 0
+        }
+      },
+      "benchmark_path": "evaluations/stale-context-cache/m7-final-clean-20261004-072204-011/benchmarks/benchmark-001/benchmark.json"
+    }
+  ],
+  "limitations": [
+    "Only six major behavioral cases use three trials; deterministic/fault cases generally use one.",
+    "Provider/model behavior remains nondeterministic.",
+    "Dollar cost coverage is unavailable in the formal M7 benchmark and is not inferred.",
+    "Subscription/provider quota is an external execution dependency.",
+    "M7 observes and grades; it does not implement M8 routing or early-exit optimization."
+  ]
+}
