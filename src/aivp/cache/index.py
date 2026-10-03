@@ -73,21 +73,26 @@ class SQLiteCacheIndex:
             mode=0o700,
         )
 
-        self.connection = (
-            sqlite3.connect(
-                str(self.path)
+        connection = sqlite3.connect(
+            str(self.path)
+        )
+
+        self.connection = connection
+
+        try:
+            self.connection.row_factory = (
+                sqlite3.Row
             )
-        )
 
-        self.connection.row_factory = (
-            sqlite3.Row
-        )
+            self.connection.execute(
+                "PRAGMA journal_mode=WAL"
+            )
 
-        self.connection.execute(
-            "PRAGMA journal_mode=WAL"
-        )
+            self._migrate()
 
-        self._migrate()
+        except BaseException:
+            connection.close()
+            raise
 
     def put(
         self,

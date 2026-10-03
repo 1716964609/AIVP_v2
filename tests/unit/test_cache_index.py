@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from pathlib import Path
+from unittest.mock import patch
 
 from aivp.cache import (
     SQLiteCacheIndex,
@@ -258,6 +259,71 @@ class SQLiteCacheIndexTests(
             version,
             1,
         )
+
+    def test_constructor_failure_closes_connection(
+        self,
+    ):
+        captured = []
+
+        real_connect = (
+            sqlite3.connect
+        )
+
+        def tracking_connect(
+            *args,
+            **kwargs,
+        ):
+            connection = real_connect(
+                *args,
+                **kwargs,
+            )
+
+            captured.append(
+                connection
+            )
+
+            return connection
+
+        failure_path = (
+            Path(self.tempdir.name)
+            / "failure.sqlite"
+        )
+
+        with patch(
+            (
+                "aivp.cache.index."
+                "sqlite3.connect"
+            ),
+            side_effect=(
+                tracking_connect
+            ),
+        ):
+            with patch.object(
+                SQLiteCacheIndex,
+                "_migrate",
+                side_effect=RuntimeError(
+                    "migration failed"
+                ),
+            ):
+                with self.assertRaises(
+                    RuntimeError
+                ):
+                    SQLiteCacheIndex(
+                        failure_path
+                    )
+
+        self.assertEqual(
+            len(captured),
+            1,
+        )
+
+        with self.assertRaises(
+            sqlite3.ProgrammingError
+        ):
+            captured[0].execute(
+                "SELECT 1"
+            )
+
 
     def test_newer_schema_is_rejected(
         self,
