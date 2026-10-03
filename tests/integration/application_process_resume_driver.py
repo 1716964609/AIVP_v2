@@ -35,6 +35,7 @@ def fake_execute(
     task,
     config,
     durable,
+    cache_root=None,
 ):
     return execute_panel(
         runtime=runtime,
@@ -60,6 +61,7 @@ def fake_execute(
         ),
         artifacts=ArtifactRegistry(),
         durable=durable,
+        cache_root=cache_root,
     )
 
 
