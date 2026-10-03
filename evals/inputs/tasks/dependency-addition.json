@@ -1,0 +1,9 @@
+{
+  "task": "Add exactly example-package==1.0.0 to evals/fixture_app/requirements.txt.",
+  "acceptance": [
+    "requirements.txt contains example-package==1.0.0"
+  ],
+  "constraints": [
+    "Do not modify unrelated application files"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "task": "Implement the standard 10 percent discount in evals/fixture_app/pricing.py. discounted_price(100) must return 90.",
+  "acceptance": [
+    "discounted_price(100) returns 90.0",
+    "The result remains rounded to two decimals"
+  ],
+  "constraints": [
+    "Do not add dependencies",
+    "Keep the public function signature"
+  ]
+}

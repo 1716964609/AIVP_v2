@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "controlled-fault-repair",
+  "description": "Controlled verification failure followed by bounded repair.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/controlled-fault-repair.json",
+    "config": "../inputs/configs/controlled-fault-repair.json"
+  },
+  "expected": {
+    "terminal_status": "AUTO_FINISHED",
+    "verification": {
+      "passed": true
+    },
+    "reviewer": {
+      "decision": "ACCEPT"
+    },
+    "diff": {
+      "required_paths": [
+        "evals/fixture_app/repair_target.py"
+      ]
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "verification",
+    "reviewer",
+    "diff",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

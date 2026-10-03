@@ -1,0 +1,9 @@
+{
+  "task": "Generate an intentionally oversized fixture change.",
+  "acceptance": [
+    "Harness blocks the change through the diff guard"
+  ],
+  "constraints": [
+    "This is an evaluation fault case"
+  ]
+}

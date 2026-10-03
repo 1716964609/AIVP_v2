@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "specification-conflict",
+  "description": "Conflicting specification should require human judgment.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/specification-conflict.json",
+    "config": "../inputs/configs/specification-conflict.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED",
+    "reviewer": {
+      "decision": "REJECT"
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "reviewer",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

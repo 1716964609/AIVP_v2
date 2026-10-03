@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "business-invariant-failure",
+  "description": "Deterministic tests pass while business invariant is violated.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/business-invariant-failure.json",
+    "config": "../inputs/configs/business-invariant-failure.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED",
+    "verification": {
+      "passed": true
+    },
+    "reviewer": {
+      "decision": "REJECT"
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "verification",
+    "reviewer",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

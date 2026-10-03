@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "stale-context-cache",
+  "description": "Stale context-cache rejection proof.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/stale-context-cache.json",
+    "config": "../inputs/configs/stale-context-cache.json"
+  },
+  "expected": {
+    "terminal_status": "AUTO_FINISHED",
+    "verification": {
+      "passed": true
+    },
+    "reviewer": {
+      "decision": "ACCEPT"
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "verification",
+    "reviewer",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

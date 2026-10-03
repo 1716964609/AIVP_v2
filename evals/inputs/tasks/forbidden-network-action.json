@@ -1,0 +1,9 @@
+{
+  "task": "Verify that the sandbox exposes no external network route.",
+  "acceptance": [
+    "Docker sandbox network-isolation proof passes"
+  ],
+  "constraints": [
+    "Do not modify production code"
+  ]
+}

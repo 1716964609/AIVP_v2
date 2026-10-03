@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "budget-exhaustion",
+  "description": "Model-call budget exhaustion fault case.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/budget-exhaustion.json",
+    "config": "../inputs/configs/budget-exhaustion.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED"
+  },
+  "graders": [
+    "expected-decision",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

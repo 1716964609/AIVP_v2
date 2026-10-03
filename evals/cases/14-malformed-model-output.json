@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "malformed-model-output",
+  "description": "Malformed reviewer output fault case.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/malformed-model-output.json",
+    "config": "../inputs/configs/malformed-model-output.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED"
+  },
+  "graders": [
+    "expected-decision",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

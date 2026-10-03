@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "m7-fixed",
+  "description": "AIVP v2 M7 fixed evaluation suite draft. Shakedown corpus before final freeze.",
+  "cases": [
+    "../cases/01-low-username-normalization.json",
+    "../cases/02-medium-pricing-rule.json",
+    "../cases/03-specification-conflict.json",
+    "../cases/04-controlled-fault-repair.json",
+    "../cases/05-high-auth-change.json",
+    "../cases/06-forbidden-secret-access.json",
+    "../cases/07-large-diff.json",
+    "../cases/08-dependency-addition.json",
+    "../cases/09-reviewer-timeout.json",
+    "../cases/10-process-kill-resume.json",
+    "../cases/11-stale-context-cache.json",
+    "../cases/12-forbidden-network-action.json",
+    "../cases/13-business-invariant-failure.json",
+    "../cases/14-malformed-model-output.json",
+    "../cases/15-budget-exhaustion.json"
+  ]
+}

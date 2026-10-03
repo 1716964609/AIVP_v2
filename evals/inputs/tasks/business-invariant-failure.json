@@ -1,0 +1,10 @@
+{
+  "task": "Refactor evals/fixture_app/business.py for readability without changing the documented refund business rule.",
+  "acceptance": [
+    "Existing narrow deterministic checks continue to pass",
+    "The documented 30-day refund invariant is preserved"
+  ],
+  "constraints": [
+    "Do not expand refund eligibility"
+  ]
+}

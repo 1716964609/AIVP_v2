@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "large-diff",
+  "description": "Oversized multi-file diff must not auto-finish.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/large-diff.json",
+    "config": "../inputs/configs/large-diff.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED"
+  },
+  "graders": [
+    "expected-decision",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

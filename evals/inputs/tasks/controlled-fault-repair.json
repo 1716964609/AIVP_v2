@@ -1,0 +1,9 @@
+{
+  "task": "Make evals/fixture_app/repair_target.py return the accepted answer value.",
+  "acceptance": [
+    "answer() returns 1"
+  ],
+  "constraints": [
+    "Use the existing function"
+  ]
+}

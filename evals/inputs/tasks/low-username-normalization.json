@@ -1,0 +1,11 @@
+{
+  "task": "Update evals/fixture_app/usernames.py so normalize_username strips surrounding whitespace and lowercases the username.",
+  "acceptance": [
+    "normalize_username(' Alice ') returns 'alice'",
+    "Only the intended fixture behavior changes"
+  ],
+  "constraints": [
+    "Keep the change small",
+    "Do not add dependencies"
+  ]
+}

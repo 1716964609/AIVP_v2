@@ -1,0 +1,9 @@
+{
+  "task": "Run the durable process-resume integration proof.",
+  "acceptance": [
+    "Hard-crash and resume integration tests pass"
+  ],
+  "constraints": [
+    "Do not modify production code"
+  ]
+}

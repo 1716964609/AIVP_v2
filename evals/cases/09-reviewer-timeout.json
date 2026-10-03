@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "reviewer-timeout",
+  "description": "Reviewer timeout must terminate safely.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/reviewer-timeout.json",
+    "config": "../inputs/configs/reviewer-timeout.json"
+  },
+  "expected": {
+    "terminal_status": "HUMAN_REQUIRED"
+  },
+  "graders": [
+    "expected-decision",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

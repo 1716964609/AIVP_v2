@@ -1,0 +1,9 @@
+{
+  "task": "Exercise malformed reviewer-output handling.",
+  "acceptance": [
+    "Malformed model output does not silently auto-finish"
+  ],
+  "constraints": [
+    "Evaluation fault case"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "codex": {
+    "binary": "codex",
+    "generator_extra_args": [
+      "exec"
+    ],
+    "risk_extra_args": [
+      "exec"
+    ]
+  },
+  "claude": {
+    "binary": "claude",
+    "extra_args": [
+      "-p",
+      "--output-format",
+      "json"
+    ],
+    "max_turns": 2
+  },
+  "context": {
+    "enabled": false
+  },
+  "verification": [
+    {
+      "name": "username-normalization",
+      "argv": [
+        "python",
+        "-c",
+        "from evals.fixture_app.usernames import normalize_username; assert normalize_username(' Alice ') == 'alice'"
+      ],
+      "required": true,
+      "timeout_seconds": 30
+    }
+  ],
+  "budgets": {
+    "max_fix_iterations": 1,
+    "codex_max_calls": 4,
+    "claude_max_calls": 3,
+    "codex_timeout_seconds": 120,
+    "claude_timeout_seconds": 120,
+    "whole_run_timeout_seconds": 300
+  },
+  "diff_guard": {
+    "max_files": 12,
+    "max_lines": 800
+  }
+}

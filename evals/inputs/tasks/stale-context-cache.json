@@ -1,0 +1,9 @@
+{
+  "task": "Run the stale context-cache fail-closed proof.",
+  "acceptance": [
+    "Stale context cache is rejected before fallback"
+  ],
+  "constraints": [
+    "Do not modify production code"
+  ]
+}

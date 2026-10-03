@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "process-kill-resume",
+  "description": "Process death and resume durability proof.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/process-kill-resume.json",
+    "config": "../inputs/configs/process-kill-resume.json"
+  },
+  "expected": {
+    "terminal_status": "AUTO_FINISHED",
+    "verification": {
+      "passed": true
+    },
+    "reviewer": {
+      "decision": "ACCEPT"
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "verification",
+    "reviewer",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

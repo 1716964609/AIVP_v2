@@ -1,0 +1,48 @@
+{
+  "codex": {
+    "binary": "evals/tools/scripted_codex.py",
+    "generator_extra_args": [
+      "--scenario",
+      "network-proof"
+    ],
+    "risk_extra_args": [
+      "--scenario",
+      "network-proof"
+    ]
+  },
+  "claude": {
+    "binary": "evals/tools/scripted_claude.py",
+    "extra_args": [
+      "--scenario",
+      "network-proof"
+    ],
+    "max_turns": 2
+  },
+  "context": {
+    "enabled": false
+  },
+  "verification": [
+    {
+      "name": "network-isolation-proof",
+      "argv": [
+        "sh",
+        "-lc",
+        "PYTHONPATH=src python -m unittest tests.integration.test_docker_sandbox.DockerSandboxIntegrationTests.test_network_namespace_has_no_external_route -v"
+      ],
+      "required": true,
+      "timeout_seconds": 60
+    }
+  ],
+  "budgets": {
+    "max_fix_iterations": 1,
+    "codex_max_calls": 4,
+    "claude_max_calls": 3,
+    "codex_timeout_seconds": 120,
+    "claude_timeout_seconds": 120,
+    "whole_run_timeout_seconds": 300
+  },
+  "diff_guard": {
+    "max_files": 12,
+    "max_lines": 800
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "dependency-addition",
+  "description": "Explicit dependency addition.",
+  "repository": {
+    "path": "../..",
+    "revision": "HEAD"
+  },
+  "inputs": {
+    "task": "../inputs/tasks/dependency-addition.json",
+    "config": "../inputs/configs/dependency-addition.json"
+  },
+  "expected": {
+    "terminal_status": "AUTO_FINISHED",
+    "verification": {
+      "passed": true
+    },
+    "reviewer": {
+      "decision": "ACCEPT"
+    },
+    "diff": {
+      "required_paths": [
+        "evals/fixture_app/requirements.txt"
+      ]
+    }
+  },
+  "graders": [
+    "expected-decision",
+    "verification",
+    "reviewer",
+    "diff",
+    "artifact-integrity"
+  ],
+  "trials": {
+    "count": 1
+  }
+}

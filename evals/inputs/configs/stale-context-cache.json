@@ -1,0 +1,48 @@
+{
+  "codex": {
+    "binary": "evals/tools/scripted_codex.py",
+    "generator_extra_args": [
+      "--scenario",
+      "stale-cache-proof"
+    ],
+    "risk_extra_args": [
+      "--scenario",
+      "stale-cache-proof"
+    ]
+  },
+  "claude": {
+    "binary": "evals/tools/scripted_claude.py",
+    "extra_args": [
+      "--scenario",
+      "stale-cache-proof"
+    ],
+    "max_turns": 2
+  },
+  "context": {
+    "enabled": false
+  },
+  "verification": [
+    {
+      "name": "stale-cache-proof",
+      "argv": [
+        "sh",
+        "-lc",
+        "PYTHONPATH=src python -m unittest tests.unit.test_context_cache_wiring.ContextCacheWiringTests.test_stale_context_cache_fails_closed_before_fallback -v"
+      ],
+      "required": true,
+      "timeout_seconds": 60
+    }
+  ],
+  "budgets": {
+    "max_fix_iterations": 1,
+    "codex_max_calls": 4,
+    "claude_max_calls": 3,
+    "codex_timeout_seconds": 120,
+    "claude_timeout_seconds": 120,
+    "whole_run_timeout_seconds": 300
+  },
+  "diff_guard": {
+    "max_files": 12,
+    "max_lines": 800
+  }
+}

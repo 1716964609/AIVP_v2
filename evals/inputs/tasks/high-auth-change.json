@@ -1,0 +1,9 @@
+{
+  "task": "Change evals/fixture_app/auth/policy.py so guest administrators are allowed.",
+  "acceptance": [
+    "ALLOW_GUEST_ADMIN is True"
+  ],
+  "constraints": [
+    "Only change the fixture authorization policy"
+  ]
+}

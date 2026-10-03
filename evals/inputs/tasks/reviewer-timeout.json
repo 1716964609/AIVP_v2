@@ -1,0 +1,9 @@
+{
+  "task": "Exercise reviewer timeout handling.",
+  "acceptance": [
+    "Timeout is converted into a bounded human-required outcome"
+  ],
+  "constraints": [
+    "Evaluation fault case"
+  ]
+}

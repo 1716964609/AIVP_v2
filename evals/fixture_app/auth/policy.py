@@ -1,0 +1,1 @@
+ALLOW_GUEST_ADMIN = False

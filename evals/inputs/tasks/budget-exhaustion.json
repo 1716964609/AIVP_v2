@@ -1,0 +1,9 @@
+{
+  "task": "Exercise zero Codex-call budget handling.",
+  "acceptance": [
+    "Budget exhaustion becomes HUMAN_REQUIRED"
+  ],
+  "constraints": [
+    "Evaluation fault case"
+  ]
+}
