@@ -217,3 +217,41 @@ M8では以下を行わない。
 - [ ] completion commit
 - [ ] completion tag
 - [ ] clean working tree
+
+
+## M8-1 Discovery — Conservative LOW Skip Rejected
+
+M7 formal evidence initially suggested a conservative optimization:
+
+- deterministic rule risk = LOW
+- Claude review risk = LOW
+- no blocking findings
+- high Claude risk confidence
+- deterministic verification PASS
+
+Under the frozen M7 formal run, Codex Risk had zero observed marginal
+final-decision contribution across the 14 trials that reached aggregate risk,
+and 10 / 14 trials matched the proposed conservative LOW skip conditions.
+
+However, the existing safety regression contract contains an explicit case
+where:
+
+- deterministic rule = LOW
+- Claude review = LOW
+- Codex independent risk judge = HIGH
+
+and the required terminal outcome is HUMAN_REQUIRED.
+
+Therefore the proposed conservative LOW skip could convert a required
+HUMAN_REQUIRED outcome into AUTO_FINISHED.
+
+The hypothesis was rejected before orchestration integration.
+
+M8 will preserve the independent Codex risk judge whenever its result can
+still change the aggregate outcome.
+
+The first accepted skip rule is limited to mathematically terminal HIGH cases:
+if deterministic rule risk or Claude review risk is already HIGH, the existing
+aggregate contract is forced to HIGH regardless of Codex output.
+
+This negative result is preserved as M8 design evidence.

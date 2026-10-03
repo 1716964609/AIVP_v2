@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Sequence
+from typing import Any, Dict
 
 from aivp.risk.aggregate import normalize_risk
 
@@ -20,27 +20,41 @@ class RiskRoutingDecision:
 
 def _blocking_findings(
     review: Dict[str, Any],
-) -> Sequence[Dict[str, Any]]:
-    findings = review.get("findings", [])
+) -> list[Dict[str, Any]]:
+    findings = review.get(
+        "findings",
+        [],
+    )
 
-    if not isinstance(findings, list):
+    if not isinstance(
+        findings,
+        list,
+    ):
         return []
 
     blockers = []
 
     for finding in findings:
-        if not isinstance(finding, dict):
+        if not isinstance(
+            finding,
+            dict,
+        ):
             continue
 
         severity = str(
-            finding.get("severity", "")
+            finding.get(
+                "severity",
+                "",
+            )
         ).strip().lower()
 
         if severity in {
             "critical",
             "major",
         }:
-            blockers.append(finding)
+            blockers.append(
+                finding
+            )
 
     return blockers
 
@@ -52,7 +66,10 @@ def _risk_confidence(
         "risk_confidence"
     )
 
-    if isinstance(value, bool):
+    if isinstance(
+        value,
+        bool,
+    ):
         return None
 
     if isinstance(
@@ -69,14 +86,17 @@ def route_codex_risk(
     rule_risk: Dict[str, Any],
     claude_review: Dict[str, Any],
     verification_passed: bool,
-    low_confidence_threshold: float = 0.8,
 ) -> RiskRoutingDecision:
     deterministic_risk = normalize_risk(
-        rule_risk.get("risk")
+        rule_risk.get(
+            "risk"
+        )
     )
 
     claude_risk = normalize_risk(
-        claude_review.get("risk")
+        claude_review.get(
+            "risk"
+        )
     )
 
     confidence = _risk_confidence(
@@ -95,66 +115,44 @@ def route_codex_risk(
             invoke_codex_risk=False,
             mode="terminal_high",
             reason=(
-                "Codex risk is unnecessary because "
-                "the existing aggregate contract is "
-                "already forced to HIGH."
+                "Codex risk is skipped because "
+                "the existing aggregate contract "
+                "is already forced to HIGH."
             ),
             deterministic_risk=(
                 deterministic_risk
             ),
             claude_risk=claude_risk,
-            claude_confidence=confidence,
-            blocking_findings=len(blockers),
+            claude_confidence=(
+                confidence
+            ),
+            blocking_findings=len(
+                blockers
+            ),
             verification_passed=(
                 verification_passed
             ),
-        )
-
-    conservative_low = (
-        verification_passed
-        and deterministic_risk == "low"
-        and claude_risk == "low"
-        and not blockers
-        and confidence is not None
-        and confidence
-        >= low_confidence_threshold
-    )
-
-    if conservative_low:
-        return RiskRoutingDecision(
-            invoke_codex_risk=False,
-            mode="conservative_low",
-            reason=(
-                "Codex risk is skipped because "
-                "deterministic risk is LOW, "
-                "Claude review risk is LOW with "
-                "sufficient confidence, verification "
-                "passed, and no blocking findings "
-                "remain."
-            ),
-            deterministic_risk=(
-                deterministic_risk
-            ),
-            claude_risk=claude_risk,
-            claude_confidence=confidence,
-            blocking_findings=0,
-            verification_passed=True,
         )
 
     return RiskRoutingDecision(
         invoke_codex_risk=True,
         mode="independent_judge_required",
         reason=(
-            "Independent Codex risk judgment remains "
-            "decision-relevant under the conservative "
-            "M8 routing policy."
+            "Codex risk remains required because "
+            "it can still raise the aggregate risk "
+            "to HIGH under the existing safety "
+            "contract."
         ),
         deterministic_risk=(
             deterministic_risk
         ),
         claude_risk=claude_risk,
-        claude_confidence=confidence,
-        blocking_findings=len(blockers),
+        claude_confidence=(
+            confidence
+        ),
+        blocking_findings=len(
+            blockers
+        ),
         verification_passed=(
             verification_passed
         ),

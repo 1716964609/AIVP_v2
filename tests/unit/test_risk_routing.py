@@ -5,7 +5,9 @@ from aivp.risk.routing import (
 )
 
 
-class RiskRoutingTests(unittest.TestCase):
+class RiskRoutingTests(
+    unittest.TestCase
+):
     def review(
         self,
         *,
@@ -25,20 +27,24 @@ class RiskRoutingTests(unittest.TestCase):
             ),
         }
 
-    def rule(self, risk):
+    def rule(
+        self,
+        risk,
+    ):
         return {
             "risk": risk,
             "reasons": [],
         }
 
-    def test_low_low_high_confidence_skips_codex(
+    def test_rule_high_skips_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "high"
+            ),
             claude_review=self.review(
-                risk="low",
-                confidence=0.95,
+                risk="low"
             ),
             verification_passed=True,
         )
@@ -49,17 +55,18 @@ class RiskRoutingTests(unittest.TestCase):
 
         self.assertEqual(
             decision.mode,
-            "conservative_low",
+            "terminal_high",
         )
 
-    def test_low_low_threshold_is_inclusive(
+    def test_claude_high_skips_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "low"
+            ),
             claude_review=self.review(
-                risk="low",
-                confidence=0.8,
+                risk="high"
             ),
             verification_passed=True,
         )
@@ -70,17 +77,36 @@ class RiskRoutingTests(unittest.TestCase):
 
         self.assertEqual(
             decision.mode,
-            "conservative_low",
+            "terminal_high",
         )
 
-    def test_low_low_low_confidence_keeps_codex(
+    def test_both_high_skip_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "high"
+            ),
+            claude_review=self.review(
+                risk="high"
+            ),
+            verification_passed=True,
+        )
+
+        self.assertFalse(
+            decision.invoke_codex_risk
+        )
+
+    def test_low_low_requires_independent_codex(
+        self,
+    ):
+        decision = route_codex_risk(
+            rule_risk=self.rule(
+                "low"
+            ),
             claude_review=self.review(
                 risk="low",
-                confidence=0.79,
+                confidence=0.99,
             ),
             verification_passed=True,
         )
@@ -94,14 +120,15 @@ class RiskRoutingTests(unittest.TestCase):
             "independent_judge_required",
         )
 
-    def test_medium_review_keeps_codex(
+    def test_low_medium_requires_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "low"
+            ),
             claude_review=self.review(
-                risk="medium",
-                confidence=0.95,
+                risk="medium"
             ),
             verification_passed=True,
         )
@@ -110,14 +137,15 @@ class RiskRoutingTests(unittest.TestCase):
             decision.invoke_codex_risk
         )
 
-    def test_medium_rule_keeps_codex(
+    def test_medium_low_requires_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("medium"),
+            rule_risk=self.rule(
+                "medium"
+            ),
             claude_review=self.review(
-                risk="low",
-                confidence=0.95,
+                risk="low"
             ),
             verification_passed=True,
         )
@@ -126,30 +154,33 @@ class RiskRoutingTests(unittest.TestCase):
             decision.invoke_codex_risk
         )
 
-    def test_failed_verification_keeps_codex(
+    def test_high_rule_skip_does_not_depend_on_confidence(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "high"
+            ),
             claude_review=self.review(
                 risk="low",
-                confidence=0.95,
+                confidence=None,
             ),
-            verification_passed=False,
+            verification_passed=True,
         )
 
-        self.assertTrue(
+        self.assertFalse(
             decision.invoke_codex_risk
         )
 
-    def test_blocking_finding_keeps_codex(
+    def test_blocking_finding_does_not_weaken_high_terminal(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
+            rule_risk=self.rule(
+                "high"
+            ),
             claude_review=self.review(
                 risk="low",
-                confidence=0.95,
                 findings=[
                     {
                         "severity": "major",
@@ -160,76 +191,25 @@ class RiskRoutingTests(unittest.TestCase):
             verification_passed=True,
         )
 
-        self.assertTrue(
-            decision.invoke_codex_risk
-        )
-
-    def test_missing_confidence_keeps_codex(
-        self,
-    ):
-        decision = route_codex_risk(
-            rule_risk=self.rule("low"),
-            claude_review=self.review(
-                risk="low",
-                confidence=None,
-            ),
-            verification_passed=True,
-        )
-
-        self.assertTrue(
-            decision.invoke_codex_risk
-        )
-
-    def test_rule_high_skips_codex_as_terminal_high(
-        self,
-    ):
-        decision = route_codex_risk(
-            rule_risk=self.rule("high"),
-            claude_review=self.review(
-                risk="low",
-                confidence=0.95,
-            ),
-            verification_passed=True,
-        )
-
         self.assertFalse(
             decision.invoke_codex_risk
         )
 
-        self.assertEqual(
-            decision.mode,
-            "terminal_high",
-        )
-
-    def test_claude_high_skips_codex_as_terminal_high(
+    def test_low_low_with_blocker_still_requires_codex(
         self,
     ):
         decision = route_codex_risk(
-            rule_risk=self.rule("low"),
-            claude_review=self.review(
-                risk="high",
-                confidence=0.95,
+            rule_risk=self.rule(
+                "low"
             ),
-            verification_passed=True,
-        )
-
-        self.assertFalse(
-            decision.invoke_codex_risk
-        )
-
-        self.assertEqual(
-            decision.mode,
-            "terminal_high",
-        )
-
-    def test_boolean_confidence_is_not_numeric_confidence(
-        self,
-    ):
-        decision = route_codex_risk(
-            rule_risk=self.rule("low"),
             claude_review=self.review(
                 risk="low",
-                confidence=True,
+                findings=[
+                    {
+                        "severity": "major",
+                        "message": "problem",
+                    }
+                ],
             ),
             verification_passed=True,
         )
