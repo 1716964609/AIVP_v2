@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m7-benchmark-reporting-start",
+  "state_updated_for": "m7-single-command-suite-start",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M7",
     "name": "Eval Harness",
-    "phase": "m7-benchmark-reporting",
+    "phase": "m7-single-command-suite",
     "branch": "m7-eval",
     "base_tag": "m6-cache-complete",
     "active_plan": "docs/exec-plans/active/M7-eval.md"
@@ -62,8 +62,8 @@
     "trial_runner": "complete",
     "deterministic_graders": "complete",
     "expected_decision_grader": "complete",
-    "benchmark_report_generator": "in_progress",
-    "fixed_eval_suite": "not_started",
+    "benchmark_report_generator": "complete",
+    "fixed_eval_suite": "in_progress",
     "raw_artifact_regrading": "complete"
   },
   "known_repository_evidence": {
@@ -79,7 +79,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Implement M7-5 benchmark reporting over preserved trial and re-grade artifacts. Aggregate reproducible case/trial outcomes and retain distributions/ranges for nondeterministic measurements without rerunning the Harness or models.",
+  "next_action": "Implement M7-6 fixed evaluation suite and one-command execution. Make approximately 15 machine-readable fixed cases discoverable and executable through the existing CLI architecture, producing preserved trials, re-grades, and benchmark reports without introducing M8 routing behavior.",
   "repository_memory": {
     "implementation_base_commit": "47b7908",
     "implementation_base_tag": "m6-cache-complete",

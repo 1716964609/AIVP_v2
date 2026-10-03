@@ -201,17 +201,32 @@ This hard M7 property is now implemented.
 
 ### M7-5 — Benchmark Reporting
 
-Status: NEXT
+Status: COMPLETE
 
-Aggregate case/trial results into reproducible reports.
+Implementation evidence:
 
-For nondeterministic model behavior, important cases should support repeated
-trials.
+- `2431062` adds benchmark reporting
+- `src/aivp/eval/benchmark.py`
+- `tests/unit/test_eval_benchmark.py`
+- benchmark quality outcomes remain separate from performance measurements
+- numerical measurements retain raw values, min, max, mean, p50, and p95
+- categorical terminal-status and final-risk distributions are preserved
+- missing `run-summary.json` is reported as unavailable rather than zero
+- partially known token/cost measurements are excluded from complete-value samples
+- cost coverage must agree with the recorded model-call count
+- benchmark generation does not invoke Harness execution, models, or external commands
+- benchmark generation does not modify source evaluation evidence
+- source re-grade identifiers and output identities fail closed on invalid paths
+- 62 Eval Harness unit tests pass
+- 310 total unit regression tests pass
+- `git diff --check` passes
 
-Reports should retain distributions/ranges rather than mean-only summaries
-where appropriate.
+For nondeterministic model behavior, repeated trials retain distributions and
+ranges rather than mean-only summaries.
 
 ### M7-6 — Single-Command Suite
+
+Status: NEXT
 
 Expose the fixed suite through one CLI entry point.
 
