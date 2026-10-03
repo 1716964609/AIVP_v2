@@ -6,12 +6,15 @@ from pathlib import Path
 
 from aivp.eval.graders import (
     EvalGraderError,
+    grade_artifact_integrity,
     grade_diff,
     grade_expected_decision,
+    grade_policy,
     grade_risk,
     grade_trial_from_artifacts,
     grade_verification,
 )
+from aivp.state.hashing import sha256_file
 
 
 class EvalGraderTests(unittest.TestCase):
@@ -614,6 +617,434 @@ class EvalGraderTests(unittest.TestCase):
                     result.passed
                     for result in results
                 )
+            )
+
+    def test_policy_denial_is_distinguished_from_other_terminal_status(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "status.json",
+                {
+                    "status": "DENIED",
+                    "metrics": {
+                        "policy_denied": True
+                    },
+                },
+            )
+
+            result = grade_policy(
+                run_dir=run_dir,
+                expected={
+                    "policy": {
+                        "outcome": "DENIED"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+
+    def test_policy_human_required_is_distinguished(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "status.json",
+                {
+                    "status": (
+                        "HUMAN_REQUIRED"
+                    ),
+                    "metrics": {
+                        "policy_human_required": (
+                            True
+                        )
+                    },
+                },
+            )
+
+            result = grade_policy(
+                run_dir=run_dir,
+                expected={
+                    "policy": {
+                        "outcome": (
+                            "HUMAN_REQUIRED"
+                        )
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+
+    def test_non_policy_human_required_does_not_match_policy_gate(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "status.json",
+                {
+                    "status": (
+                        "HUMAN_REQUIRED"
+                    ),
+                    "metrics": {
+                        "budget_exceeded": True
+                    },
+                },
+            )
+
+            result = grade_policy(
+                run_dir=run_dir,
+                expected={
+                    "policy": {
+                        "outcome": (
+                            "HUMAN_REQUIRED"
+                        )
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "FAIL",
+            )
+            self.assertEqual(
+                result.observed,
+                "NONE",
+            )
+
+    def test_policy_internal_inconsistency_is_error(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "status.json",
+                {
+                    "status": (
+                        "AUTO_FINISHED"
+                    ),
+                    "metrics": {
+                        "policy_denied": True
+                    },
+                },
+            )
+
+            result = grade_policy(
+                run_dir=run_dir,
+                expected={
+                    "policy": {
+                        "outcome": "DENIED"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "ERROR",
+            )
+
+    def test_artifact_integrity_passes_against_snapshot(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            evaluation_root = (
+                root / "evaluation"
+            )
+            run_dir = (
+                evaluation_root
+                / "runs"
+                / "run-1"
+            )
+
+            run_dir.mkdir(
+                parents=True
+            )
+
+            artifact = (
+                run_dir / "status.json"
+            )
+
+            artifact.write_text(
+                '{"status":"AUTO_FINISHED"}\n',
+                encoding="utf-8",
+            )
+
+            manifest_path = (
+                evaluation_root
+                / "integrity"
+                / "trial-001.json"
+            )
+
+            self._write_json(
+                manifest_path,
+                {
+                    "artifacts": [
+                        {
+                            "path": (
+                                "status.json"
+                            ),
+                            "sha256": (
+                                sha256_file(
+                                    artifact
+                                )
+                            ),
+                            "size_bytes": (
+                                artifact.stat()
+                                .st_size
+                            ),
+                        }
+                    ]
+                },
+            )
+
+            result = (
+                grade_artifact_integrity(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    run_dir=run_dir,
+                    trial_manifest={
+                        "integrity_manifest": (
+                            "integrity/"
+                            "trial-001.json"
+                        )
+                    },
+                )
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+            self.assertEqual(
+                result.observed[
+                    "checked_artifacts"
+                ],
+                1,
+            )
+
+    def test_artifact_integrity_detects_tampering(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            evaluation_root = (
+                root / "evaluation"
+            )
+            run_dir = (
+                evaluation_root
+                / "runs"
+                / "run-1"
+            )
+
+            run_dir.mkdir(
+                parents=True
+            )
+
+            artifact = (
+                run_dir / "status.json"
+            )
+
+            artifact.write_text(
+                "original\n",
+                encoding="utf-8",
+            )
+
+            expected_sha = sha256_file(
+                artifact
+            )
+            expected_size = (
+                artifact.stat().st_size
+            )
+
+            self._write_json(
+                evaluation_root
+                / "integrity"
+                / "trial-001.json",
+                {
+                    "artifacts": [
+                        {
+                            "path": (
+                                "status.json"
+                            ),
+                            "sha256": (
+                                expected_sha
+                            ),
+                            "size_bytes": (
+                                expected_size
+                            ),
+                        }
+                    ]
+                },
+            )
+
+            artifact.write_text(
+                "tampered\n",
+                encoding="utf-8",
+            )
+
+            result = (
+                grade_artifact_integrity(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    run_dir=run_dir,
+                    trial_manifest={
+                        "integrity_manifest": (
+                            "integrity/"
+                            "trial-001.json"
+                        )
+                    },
+                )
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "FAIL",
+            )
+            self.assertFalse(
+                result.passed
+            )
+
+    def test_policy_and_integrity_dispatch_from_saved_artifacts(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            evaluation_root = (
+                root / "evaluation"
+            )
+
+            run_dir = (
+                evaluation_root
+                / "runs"
+                / "eval-test-trial-001"
+            )
+
+            run_dir.mkdir(
+                parents=True
+            )
+
+            status_path = (
+                run_dir / "status.json"
+            )
+
+            self._write_json(
+                status_path,
+                {
+                    "status": (
+                        "HUMAN_REQUIRED"
+                    ),
+                    "metrics": {
+                        "policy_human_required": (
+                            True
+                        )
+                    },
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "case-snapshot.json",
+                {
+                    "expected": {
+                        "policy": {
+                            "outcome": (
+                                "HUMAN_REQUIRED"
+                            )
+                        }
+                    },
+                    "graders": [
+                        "policy",
+                        "artifact-integrity",
+                    ],
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "integrity"
+                / "trial-001.json",
+                {
+                    "artifacts": [
+                        {
+                            "path": (
+                                "status.json"
+                            ),
+                            "sha256": (
+                                sha256_file(
+                                    status_path
+                                )
+                            ),
+                            "size_bytes": (
+                                status_path
+                                .stat()
+                                .st_size
+                            ),
+                        }
+                    ]
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "trials"
+                / "trial-001.json",
+                {
+                    "run_dir": (
+                        "runs/"
+                        "eval-test-trial-001"
+                    ),
+                    "integrity_manifest": (
+                        "integrity/"
+                        "trial-001.json"
+                    ),
+                },
+            )
+
+            results = (
+                grade_trial_from_artifacts(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    trial_id="trial-001",
+                )
+            )
+
+            self.assertEqual(
+                [
+                    result.grader
+                    for result in results
+                ],
+                [
+                    "policy",
+                    "artifact-integrity",
+                ],
+            )
+
+            self.assertEqual(
+                [
+                    result.outcome
+                    for result in results
+                ],
+                [
+                    "PASS",
+                    "PASS",
+                ],
             )
 
     def test_run_dir_path_escape_fails_closed(

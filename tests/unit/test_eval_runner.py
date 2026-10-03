@@ -415,6 +415,108 @@ class EvalRunnerTests(unittest.TestCase):
                 1,
             )
 
+    def test_successful_trial_snapshots_raw_artifact_integrity(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            case, _, _, _ = (
+                self._fixture(
+                    root,
+                    trials=1,
+                )
+            )
+
+            reports = root / "eval-reports"
+
+            def fake_run_new(**kwargs):
+                run_dir = (
+                    kwargs["reports_root"]
+                    / kwargs["run_id"]
+                )
+
+                run_dir.mkdir(
+                    parents=True
+                )
+
+                self._write_json(
+                    run_dir / "status.json",
+                    {
+                        "status": (
+                            "AUTO_FINISHED"
+                        )
+                    },
+                )
+
+                worktree = (
+                    run_dir / "worktree"
+                )
+                worktree.mkdir()
+                (
+                    worktree / "source.py"
+                ).write_text(
+                    "ignored\n",
+                    encoding="utf-8",
+                )
+
+                return run_dir
+
+            with patch(
+                "aivp.eval.runner.run_new",
+                side_effect=fake_run_new,
+            ):
+                result = run_eval_case(
+                    case,
+                    reports_root=reports,
+                    state_db=(
+                        root / "state.db"
+                    ),
+                    evaluation_id=(
+                        "eval-integrity"
+                    ),
+                )
+
+            integrity = json.loads(
+                (
+                    result.evaluation_root
+                    / "integrity"
+                    / "trial-001.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            paths = [
+                item["path"]
+                for item
+                in integrity["artifacts"]
+            ]
+
+            self.assertEqual(
+                paths,
+                [
+                    "status.json"
+                ],
+            )
+
+            trial = json.loads(
+                (
+                    result.evaluation_root
+                    / "trials"
+                    / "trial-001.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                trial[
+                    "integrity_manifest"
+                ],
+                "integrity/trial-001.json",
+            )
+
     def test_execution_failure_is_recorded_and_reraised(
         self,
     ):

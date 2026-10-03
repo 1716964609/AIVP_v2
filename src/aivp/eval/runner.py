@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
+import os
 import re
 import uuid
 
@@ -17,6 +18,7 @@ from aivp.containment.worktree import (
 )
 from aivp.errors import AIVPError
 from aivp.eval.case import EvalCase
+from aivp.state.hashing import sha256_file
 
 
 EVAL_RUNNER_VERSION = "1.0.0"
@@ -218,6 +220,102 @@ def _write_case_snapshots(
     )
 
 
+def _snapshot_run_artifacts(
+    *,
+    run_dir: Path,
+    manifest_path: Path,
+) -> None:
+    run_dir = (
+        run_dir
+        .expanduser()
+        .resolve()
+    )
+
+    artifacts = []
+
+    for root, dirnames, filenames in os.walk(
+        run_dir
+    ):
+        root_path = Path(root)
+
+        retained_dirs = []
+
+        for dirname in sorted(dirnames):
+            candidate = (
+                root_path / dirname
+            )
+
+            # The execution worktree is mutable
+            # task output, not a Harness artifact.
+            if (
+                root_path == run_dir
+                and dirname == "worktree"
+            ):
+                continue
+
+            if candidate.is_symlink():
+                raise EvalRunnerError(
+                    "Symlinked artifact directory "
+                    "is not allowed: "
+                    f"{candidate}"
+                )
+
+            retained_dirs.append(
+                dirname
+            )
+
+        dirnames[:] = retained_dirs
+
+        for filename in sorted(filenames):
+            path = root_path / filename
+
+            if path.is_symlink():
+                raise EvalRunnerError(
+                    "Symlinked artifact file "
+                    "is not allowed: "
+                    f"{path}"
+                )
+
+            if not path.is_file():
+                continue
+
+            relative = (
+                path
+                .relative_to(run_dir)
+                .as_posix()
+            )
+
+            artifacts.append(
+                {
+                    "path": relative,
+                    "sha256": sha256_file(
+                        path
+                    ),
+                    "size_bytes": (
+                        path.stat().st_size
+                    ),
+                }
+            )
+
+    artifacts.sort(
+        key=lambda item: item["path"]
+    )
+
+    dump_json(
+        manifest_path,
+        {
+            "version": (
+                EVAL_RUNNER_VERSION
+            ),
+            "algorithm": "sha256",
+            "excluded_roots": [
+                "worktree"
+            ],
+            "artifacts": artifacts,
+        },
+    )
+
+
 def _write_trial_manifest(
     path: Path,
     *,
@@ -232,6 +330,7 @@ def _write_trial_manifest(
     finished_at: Optional[str],
     run_dir_relative: str,
     error_type: Optional[str] = None,
+    integrity_manifest: Optional[str] = None,
 ) -> None:
     dump_json(
         path,
@@ -255,6 +354,9 @@ def _write_trial_manifest(
             "finished_at": finished_at,
             "run_dir": run_dir_relative,
             "error_type": error_type,
+            "integrity_manifest": (
+                integrity_manifest
+            ),
         },
     )
 
@@ -322,8 +424,13 @@ def run_eval_case(
         evaluation_root / "trials"
     )
 
+    integrity_root = (
+        evaluation_root / "integrity"
+    )
+
     runs_root.mkdir()
     trials_root.mkdir()
+    integrity_root.mkdir()
 
     _write_case_snapshots(
         evaluation_root=evaluation_root,
@@ -385,6 +492,15 @@ def run_eval_case(
             / f"{trial_id}.json"
         )
 
+        integrity_manifest_relative = (
+            f"integrity/{trial_id}.json"
+        )
+
+        integrity_manifest_path = (
+            evaluation_root
+            / integrity_manifest_relative
+        )
+
         started_at = _now_iso()
 
         _write_trial_manifest(
@@ -433,6 +549,13 @@ def run_eval_case(
                     "Harness returned unexpected "
                     f"run directory: {run_dir}"
                 )
+
+            _snapshot_run_artifacts(
+                run_dir=expected_run_dir,
+                manifest_path=(
+                    integrity_manifest_path
+                ),
+            )
 
         except Exception as exc:
             finished_at = _now_iso()
@@ -500,6 +623,9 @@ def run_eval_case(
             finished_at=finished_at,
             run_dir_relative=(
                 run_dir_relative
+            ),
+            integrity_manifest=(
+                integrity_manifest_relative
             ),
         )
 

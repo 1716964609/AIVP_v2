@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Optional, Tuple
 
-from aivp.errors import AIVPError
+from aivp.errors import (
+    AIVPError,
+    StateIntegrityError,
+)
+from aivp.state.integrity import validate_artifact
 from aivp.structured import load_structured
 
 
@@ -784,6 +788,452 @@ def grade_diff(
     )
 
 
+def grade_policy(
+    *,
+    run_dir: Path,
+    expected: Mapping[str, Any],
+    evidence_prefix: str = "",
+) -> GradeResult:
+    policy_expected = expected.get(
+        "policy"
+    )
+
+    if not isinstance(
+        policy_expected,
+        Mapping,
+    ):
+        raise EvalGraderError(
+            "policy grader requires "
+            "expected.policy mapping"
+        )
+
+    outcome = policy_expected.get(
+        "outcome"
+    )
+
+    if not isinstance(
+        outcome,
+        str,
+    ):
+        raise EvalGraderError(
+            "policy grader requires "
+            "expected.policy.outcome"
+        )
+
+    expected_outcome = (
+        outcome.strip().upper()
+    )
+
+    if expected_outcome not in {
+        "NONE",
+        "DENIED",
+        "HUMAN_REQUIRED",
+    }:
+        raise EvalGraderError(
+            "expected.policy.outcome must be "
+            "NONE, DENIED, or HUMAN_REQUIRED"
+        )
+
+    status_path = (
+        run_dir / "status.json"
+    )
+
+    evidence = (
+        f"{evidence_prefix}status.json",
+    )
+
+    if not status_path.is_file():
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason="status.json is missing",
+        )
+
+    try:
+        status_doc = _load_json_mapping(
+            status_path
+        )
+    except EvalGraderError:
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason="status.json is malformed",
+        )
+
+    status = status_doc.get("status")
+    metrics = status_doc.get("metrics")
+
+    if not isinstance(status, str):
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason=(
+                "status.json does not contain "
+                "string status"
+            ),
+        )
+
+    if not isinstance(metrics, Mapping):
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason=(
+                "status.json does not contain "
+                "metrics mapping"
+            ),
+        )
+
+    denied = metrics.get(
+        "policy_denied",
+        False,
+    )
+
+    human = metrics.get(
+        "policy_human_required",
+        False,
+    )
+
+    if not isinstance(
+        denied,
+        bool,
+    ) or not isinstance(
+        human,
+        bool,
+    ):
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason=(
+                "policy metrics must be "
+                "boolean"
+            ),
+        )
+
+    if denied and human:
+        return _error_result(
+            grader="policy",
+            expected=expected_outcome,
+            evidence=evidence,
+            reason=(
+                "Conflicting policy terminal "
+                "metrics"
+            ),
+        )
+
+    if denied:
+        if status != "DENIED":
+            return _error_result(
+                grader="policy",
+                expected=expected_outcome,
+                evidence=evidence,
+                reason=(
+                    "policy_denied conflicts "
+                    "with terminal status"
+                ),
+            )
+
+        observed = "DENIED"
+
+    elif human:
+        if status != "HUMAN_REQUIRED":
+            return _error_result(
+                grader="policy",
+                expected=expected_outcome,
+                evidence=evidence,
+                reason=(
+                    "policy_human_required "
+                    "conflicts with terminal "
+                    "status"
+                ),
+            )
+
+        observed = "HUMAN_REQUIRED"
+
+    else:
+        observed = "NONE"
+
+    return _comparison_result(
+        grader="policy",
+        expected=expected_outcome,
+        observed=observed,
+        evidence=evidence,
+    )
+
+
+def grade_artifact_integrity(
+    *,
+    evaluation_root: Path,
+    run_dir: Path,
+    trial_manifest: Mapping[str, Any],
+) -> GradeResult:
+    evaluation_root = (
+        evaluation_root
+        .expanduser()
+        .resolve()
+    )
+
+    run_dir = (
+        run_dir
+        .expanduser()
+        .resolve()
+    )
+
+    try:
+        run_dir.relative_to(
+            evaluation_root
+        )
+    except ValueError:
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(),
+            reason=(
+                "Run directory escapes "
+                "evaluation root"
+            ),
+        )
+
+    manifest_raw = trial_manifest.get(
+        "integrity_manifest"
+    )
+
+    if not isinstance(
+        manifest_raw,
+        str,
+    ) or not manifest_raw.strip():
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(),
+            reason=(
+                "Trial manifest has no "
+                "integrity manifest"
+            ),
+        )
+
+    manifest_path = (
+        evaluation_root
+        / manifest_raw
+    ).resolve()
+
+    try:
+        manifest_path.relative_to(
+            evaluation_root
+        )
+    except ValueError:
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(manifest_raw,),
+            reason=(
+                "Integrity manifest escapes "
+                "evaluation root"
+            ),
+        )
+
+    if not manifest_path.is_file():
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(manifest_raw,),
+            reason=(
+                "Integrity manifest is missing"
+            ),
+        )
+
+    try:
+        manifest = _load_json_mapping(
+            manifest_path
+        )
+    except EvalGraderError:
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(manifest_raw,),
+            reason=(
+                "Integrity manifest is malformed"
+            ),
+        )
+
+    records = manifest.get("artifacts")
+
+    if not isinstance(records, list):
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(manifest_raw,),
+            reason=(
+                "Integrity artifact list "
+                "is malformed"
+            ),
+        )
+
+    if not records:
+        return _error_result(
+            grader="artifact-integrity",
+            expected={
+                "snapshot_match": True
+            },
+            evidence=(manifest_raw,),
+            reason=(
+                "Integrity manifest contains "
+                "no artifacts"
+            ),
+        )
+
+    evidence = [manifest_raw]
+    failures = []
+    seen_paths = set()
+
+    for record in records:
+        if not isinstance(record, Mapping):
+            return _error_result(
+                grader="artifact-integrity",
+                expected={
+                    "snapshot_match": True
+                },
+                evidence=tuple(evidence),
+                reason=(
+                    "Integrity record is "
+                    "malformed"
+                ),
+            )
+
+        relative = record.get("path")
+        expected_sha = record.get("sha256")
+        expected_size = record.get(
+            "size_bytes"
+        )
+
+        if (
+            not isinstance(relative, str)
+            or not relative
+            or not isinstance(
+                expected_sha,
+                str,
+            )
+            or not expected_sha
+            or isinstance(
+                expected_size,
+                bool,
+            )
+            or not isinstance(
+                expected_size,
+                int,
+            )
+            or expected_size < 0
+        ):
+            return _error_result(
+                grader="artifact-integrity",
+                expected={
+                    "snapshot_match": True
+                },
+                evidence=tuple(evidence),
+                reason=(
+                    "Integrity record fields "
+                    "are malformed"
+                ),
+            )
+
+        if relative in seen_paths:
+            return _error_result(
+                grader="artifact-integrity",
+                expected={
+                    "snapshot_match": True
+                },
+                evidence=tuple(evidence),
+                reason=(
+                    "Integrity manifest contains "
+                    "duplicate artifact paths"
+                ),
+            )
+
+        seen_paths.add(relative)
+
+        artifact_path = (
+            run_dir / relative
+        ).resolve()
+
+        try:
+            artifact_path.relative_to(
+                run_dir
+            )
+        except ValueError:
+            return _error_result(
+                grader="artifact-integrity",
+                expected={
+                    "snapshot_match": True
+                },
+                evidence=tuple(evidence),
+                reason=(
+                    "Integrity artifact path "
+                    "escapes run directory"
+                ),
+            )
+
+        evidence.append(relative)
+
+        try:
+            validate_artifact(
+                path=artifact_path,
+                expected_sha256=(
+                    expected_sha
+                ),
+                expected_size_bytes=(
+                    expected_size
+                ),
+            )
+        except StateIntegrityError:
+            failures.append(relative)
+
+    passed = not failures
+
+    return GradeResult(
+        grader="artifact-integrity",
+        outcome=(
+            "PASS"
+            if passed
+            else "FAIL"
+        ),
+        passed=passed,
+        expected={
+            "snapshot_match": True
+        },
+        observed={
+            "snapshot_match": passed,
+            "checked_artifacts": len(
+                records
+            ),
+        },
+        evidence=tuple(evidence),
+        reason=(
+            None
+            if passed
+            else (
+                "Artifact integrity mismatch: "
+                + ", ".join(failures)
+            )
+        ),
+    )
+
+
 def grade_result_to_dict(
     result: GradeResult,
 ) -> Mapping[str, Any]:
@@ -935,6 +1385,28 @@ def grade_trial_from_artifacts(
                 evidence_prefix=(
                     evidence_prefix
                 ),
+            )
+
+        elif grader == "policy":
+            result = grade_policy(
+                run_dir=run_dir,
+                expected=expected,
+                evidence_prefix=(
+                    evidence_prefix
+                ),
+            )
+
+        elif grader == "artifact-integrity":
+            result = (
+                grade_artifact_integrity(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    run_dir=run_dir,
+                    trial_manifest=(
+                        trial_manifest
+                    ),
+                )
             )
 
         else:
