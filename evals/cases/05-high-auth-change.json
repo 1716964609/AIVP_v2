@@ -16,7 +16,7 @@
       "passed": true
     },
     "reviewer": {
-      "decision": "ACCEPT"
+      "decision": "REJECT"
     }
   },
   "graders": [
