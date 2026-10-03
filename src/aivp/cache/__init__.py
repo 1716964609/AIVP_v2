@@ -20,3 +20,13 @@ __all__ += [
     "CacheObject",
     "ContentAddressedCache",
 ]
+
+from aivp.cache.index import (
+    CacheIndexEntry,
+    SQLiteCacheIndex,
+)
+
+__all__ += [
+    "CacheIndexEntry",
+    "SQLiteCacheIndex",
+]
