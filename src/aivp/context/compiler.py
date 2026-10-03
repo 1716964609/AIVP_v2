@@ -4,7 +4,7 @@ import hashlib
 import json
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 from aivp.context.association import (
     find_test_associations,
@@ -20,6 +20,7 @@ from aivp.context.imports import (
     find_import_neighbors,
 )
 from aivp.context.repo_map import (
+    RepoMapEntry,
     build_repo_map,
 )
 from aivp.context.selector import (
@@ -100,10 +101,15 @@ def _manifest_hash(
 
 def compile_context(
     request: ContextRequest,
+    *,
+    repo_map: Optional[
+        Tuple[RepoMapEntry, ...]
+    ] = None,
 ) -> ContextCompilation:
-    repo_map = build_repo_map(
-        request.repo
-    )
+    if repo_map is None:
+        repo_map = build_repo_map(
+            request.repo
+        )
 
     selected = select_relevant_files(
         repo=request.repo,
