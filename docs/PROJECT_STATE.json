@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m7-complete-m8-ready",
+  "state_updated_for": "m8-baseline-inspection-start",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,10 +11,10 @@
   "current": {
     "milestone": "M8",
     "name": "Risk-based Routing / Economics",
-    "phase": "ready_to_start",
-    "branch": "m7-eval",
+    "phase": "m8-baseline-inspection",
+    "branch": "m8-risk-routing-economics",
     "base_tag": "m7-eval-harness-complete",
-    "active_plan": null
+    "active_plan": "docs/exec-plans/active/M8-routing-economics.md"
   },
   "completed_milestones": {
     "M0": {
@@ -86,7 +86,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Start M8 Risk-based Routing / Economics from the frozen M7 quality baseline. Create the M8 execution plan and branch before changing routing behavior. Implement deterministic risk floor, review routing, model/call budget routing, and early exit while preserving M7 eval quality.",
+  "next_action": "Inspect the current Harness Panel control flow, reviewer invocation, risk evaluation, model-call budgets, terminal transitions, and M7 Before metrics before changing routing behavior.",
   "repository_memory": {
     "implementation_base_commit": "ec499e0a601023a5187d474e7b596662ff89abee",
     "implementation_base_tag": "m7-eval-harness-complete",

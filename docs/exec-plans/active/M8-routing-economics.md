@@ -1,0 +1,219 @@
+# M8 — Risk-based Routing / Economics
+
+Status: ACTIVE / BASELINE INSPECTION
+
+## 目的
+
+M8では、M7で完成した固定Eval Harnessを品質基準として利用し、
+現在のAIVP Harnessから不要なModel Callを削減する。
+
+目標は単純なCall数削減ではない。
+
+必要な品質・安全性を維持しながら、
+不要なModel Call、Latency、Token、Costを削減し、
+Routing判断をArtifactから説明可能にする。
+
+## M7固定ベースライン
+
+M7 completion evidence commit:
+
+ec499e0a601023a5187d474e7b596662ff89abee
+
+M7 completion tag:
+
+m7-eval-harness-complete
+
+M7 continuity commit:
+
+038b18879c9052c188e8a4ebcd42eebea89b5d0f
+
+Formal M7 run:
+
+m7-final-clean-20261004-072204
+
+品質基準:
+
+- 15 / 15 fixed cases PASS
+- 27 trials
+- 27 / 27 offline re-grade reproduction
+- baseline SHA mismatch: 0
+- 323 unit tests PASS
+- 11 integration tests PASS
+
+機械可読ベースライン:
+
+docs/evidence/m7-eval-summary.json
+
+M7のEvidenceと期待値は歴史的証拠として固定する。
+
+M8の結果を良く見せるためにM7期待値を書き換えてはならない。
+
+## Master Plan上の実装対象
+
+- deterministic risk floor
+- review routing
+- model / call budget routing
+- early exit
+
+## M8-0 — 現在のControl Flow調査
+
+Status: ACTIVE
+
+確認するもの:
+
+- Generatorがどこで呼ばれるか
+- Fixerがどこで呼ばれるか
+- Claude Reviewerがどこで呼ばれるか
+- Risk Judgeがどこで呼ばれるか
+- 既存のdeterministic policy / risk情報
+- terminal decisionが確定する位置
+- model-call budgetの位置
+- repair budgetの位置
+- M7各CaseのBefore指標
+
+この段階ではRouting動作を変更しない。
+
+## M8-1 — Deterministic Risk Floor
+
+Status: NOT STARTED
+
+LLM判断より前に確定できる安全境界をDeterministicに定義する。
+
+候補:
+
+- capability / policy class
+- sensitive / forbidden path
+- auth / security change
+- dependency addition
+- diff size / blast radius
+- deterministic verification failure
+- production / external mutation intent
+
+Deterministicな安全境界をLLMが弱めてはならない。
+
+## M8-2 — Review Routing
+
+Status: NOT STARTED
+
+Independent Reviewerを、
+
+「呼べるから毎回呼ぶ」
+
+から、
+
+「DecisionまたはSafetyに意味がある場合だけ呼ぶ」
+
+へ変更する。
+
+Reviewをskipした場合も、
+なぜskipしたかをArtifactとして保存する。
+
+## M8-3 — Model / Call Budget Routing
+
+Status: NOT STARTED
+
+Generator / Fixer / Reviewer / Risk Judgeごとに
+Call Budgetを明示的に管理する。
+
+Terminal Outcomeが既に確定している場合、
+不要な後続Model Callを行わない。
+
+Budget exhaustionは引き続きfail-safeに扱う。
+
+## M8-4 — Early Exit
+
+Status: NOT STARTED
+
+Deterministic evidenceだけで安全なTerminal Pathが確定した場合、
+後続処理を停止する。
+
+候補:
+
+- hard policy denial
+- deterministic HUMAN_REQUIRED
+- repair / call budget exhaustion
+- unrecoverable deterministic verification failure
+
+正確なRuleはM8-0で現在のControl Flowを確認してから決める。
+
+## M8-5 — 再Benchmark
+
+Status: NOT STARTED
+
+M7と同じ固定Eval SuiteをM8で再実行する。
+
+最低比較項目:
+
+- Eval pass rate
+- final decision correctness
+- total model calls
+- Codex calls
+- Claude calls
+- repair iterations
+- input tokens
+- cached tokens
+- output tokens
+- p50 latency
+- p95 latency
+- HUMAN_REQUIRED behavior
+- Cost per Accepted Change
+- Cost coverage
+
+Hard Gate:
+
+15 / 15 fixed cases PASS
+
+品質またはSafetyがRegressionした場合、
+Call削減結果は成功として扱わない。
+
+## 明示的な非対象
+
+M8では以下を行わない。
+
+- Reviewer Agent追加
+- Redis
+- PostgreSQL
+- Temporal
+- Kubernetes
+- Semantic Cache
+- Distributed Execution
+- Production Deployment
+- M9 Garbage Collection
+- M10 Publication
+
+## Closure Gate
+
+### Technical
+
+- [ ] deterministic risk floor
+- [ ] review routing
+- [ ] model / call budget routing
+- [ ] early exit
+- [ ] routing evidence persistence
+- [ ] M7 fixed suite 15 / 15 PASS
+- [ ] full regression PASS
+
+### Economics
+
+- [ ] total model calls Before / After
+- [ ] role別Model Call Before / After
+- [ ] Token Before / After
+- [ ] p50 / p95 latency Before / After
+- [ ] Cost per Accepted Change比較
+- [ ] unavailableなCostを0として扱わない
+
+### Repository Memory
+
+- [ ] docs/evidence/m8-routing-economics.md
+- [ ] machine-readable M8 comparison evidence
+- [ ] docs/milestones/M8.md
+- [ ] docs/CAPABILITY_LEDGER.json
+- [ ] docs/PROJECT_STATE.json
+- [ ] execution planをcompletedへ移動
+
+### Git Closure
+
+- [ ] git diff --check PASS
+- [ ] completion commit
+- [ ] completion tag
+- [ ] clean working tree
