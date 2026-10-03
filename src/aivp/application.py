@@ -106,6 +106,21 @@ def _pricing_catalog_from_config(
     return catalog
 
 
+def _cache_root_from_state_db(
+    state_db: Path,
+) -> Path:
+    state_db = (
+        state_db
+        .expanduser()
+        .resolve()
+    )
+
+    return (
+        state_db.parent
+        / "cache"
+    )
+
+
 def new_run_id() -> str:
     timestamp = (
         dt.datetime.now()
@@ -129,6 +144,9 @@ def _execute(
     durable: Optional[
         DurableExecution
     ],
+    cache_root: Optional[
+        Path
+    ] = None,
 ) -> Path:
     run_id = (
         durable.run_id
@@ -187,6 +205,7 @@ def _execute(
             risk_engine=risk_engine,
             artifacts=ArtifactRegistry(),
             durable=durable,
+            cache_root=cache_root,
             policy=policy,
         )
 
@@ -226,6 +245,20 @@ def run_new(
     dry_run: bool = False,
 ) -> Path:
     repo = repo.expanduser().resolve()
+
+    state_db = (
+        state_db
+        .expanduser()
+        .resolve()
+    )
+
+    cache_root = (
+        None
+        if dry_run
+        else _cache_root_from_state_db(
+            state_db
+        )
+    )
 
     if not repo.exists():
         raise AIVPError(
@@ -275,6 +308,7 @@ def run_new(
             task=task,
             config=config,
             durable=None,
+            cache_root=cache_root,
         )
 
     worktree = create_run_worktree(
@@ -324,6 +358,7 @@ def run_new(
             task=task,
             config=config,
             durable=durable,
+            cache_root=cache_root,
         )
 
 
