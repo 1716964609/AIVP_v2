@@ -30,3 +30,19 @@ __all__ += [
     "CacheIndexEntry",
     "SQLiteCacheIndex",
 ]
+
+from aivp.cache.repo_map import (
+    REPO_MAP_CACHE_VERSION,
+    REPO_MAP_NAMESPACE,
+    RepoMapCache,
+    RepoMapCacheResult,
+    repo_map_cache_key,
+)
+
+__all__ += [
+    "REPO_MAP_CACHE_VERSION",
+    "REPO_MAP_NAMESPACE",
+    "RepoMapCache",
+    "RepoMapCacheResult",
+    "repo_map_cache_key",
+]
