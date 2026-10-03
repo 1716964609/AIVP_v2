@@ -14,6 +14,11 @@ from aivp.artifacts.io import (
     dump_text,
 )
 from aivp.artifacts.registry import ArtifactRegistry
+from aivp.cache import (
+    ContentAddressedCache,
+    RepoMapCache,
+    SQLiteCacheIndex,
+)
 from aivp.errors import (
     AIVPError,
     BudgetExceeded,
@@ -70,6 +75,7 @@ from aivp.repository.git import (
     assert_git_repo,
     capture_diff,
     changed_paths,
+    git,
     repo_lock,
 )
 from aivp.risk.aggregate import normalize_risk
@@ -97,6 +103,61 @@ from aivp.verification.diff_guard import (
 
 
 COMPAT_VERSION = "1.0.0"
+
+
+def _compile_context_with_cache(
+    request: ContextRequest,
+    *,
+    cache_root: Optional[Path],
+):
+    if cache_root is None:
+        return (
+            compile_context(request),
+            None,
+        )
+
+    repo_sha = git(
+        request.repo,
+        "rev-parse",
+        "HEAD",
+    ).stdout.strip()
+
+    if not repo_sha:
+        raise StateIntegrityError(
+            "Repository HEAD SHA "
+            "is empty"
+        )
+
+    cache_root = (
+        cache_root
+        .expanduser()
+        .resolve()
+    )
+
+    cas = ContentAddressedCache(
+        cache_root
+    )
+
+    with SQLiteCacheIndex(
+        cache_root / "cache.sqlite"
+    ) as index:
+        cache_result = RepoMapCache(
+            cas=cas,
+            index=index,
+        ).get_or_build(
+            repo=request.repo,
+            repo_sha=repo_sha,
+        )
+
+    compilation = compile_context(
+        request,
+        repo_map=cache_result.entries,
+    )
+
+    return (
+        compilation,
+        cache_result,
+    )
 
 
 def _run_id() -> str:
@@ -582,6 +643,7 @@ def execute_panel(
     durable: Optional[
         DurableExecution
     ] = None,
+    cache_root: Optional[Path] = None,
     policy: Optional[
         StaticCapabilityPolicy
     ] = None,
@@ -744,13 +806,39 @@ def execute_panel(
             )
 
             if resume_plan is None:
-                compilation = compile_context(
-                    ContextRequest(
-                        repo=repo,
-                        task_text=task_text,
-                        budget=context_budget,
+                (
+                    compilation,
+                    repo_map_cache_result,
+                ) = (
+                    _compile_context_with_cache(
+                        ContextRequest(
+                            repo=repo,
+                            task_text=task_text,
+                            budget=context_budget,
+                        ),
+                        cache_root=cache_root,
                     )
                 )
+
+                if (
+                    repo_map_cache_result
+                    is not None
+                ):
+                    runtime.log_event(
+                        "repo_map_cache",
+                        cache_hit=(
+                            repo_map_cache_result
+                            .cache_hit
+                        ),
+                        cache_key=(
+                            repo_map_cache_result
+                            .cache_key
+                        ),
+                        object_sha256=(
+                            repo_map_cache_result
+                            .object_sha256
+                        ),
+                    )
 
                 context_text = (
                     compilation
