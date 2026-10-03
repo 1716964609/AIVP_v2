@@ -10,3 +10,13 @@ __all__ = [
     "ContextCacheIdentity",
     "context_cache_identity",
 ]
+
+from aivp.cache.cas import (
+    CacheObject,
+    ContentAddressedCache,
+)
+
+__all__ += [
+    "CacheObject",
+    "ContentAddressedCache",
+]
