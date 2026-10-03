@@ -243,6 +243,7 @@ def run_new(
     state_db: Path,
     run_id: Optional[str] = None,
     dry_run: bool = False,
+    base_revision: Optional[str] = None,
 ) -> Path:
     repo = repo.expanduser().resolve()
 
@@ -263,6 +264,15 @@ def run_new(
     if not repo.exists():
         raise AIVPError(
             f"Repository not found: {repo}"
+        )
+
+    if (
+        dry_run
+        and base_revision is not None
+    ):
+        raise AIVPError(
+            "Explicit base_revision is not "
+            "supported for dry runs"
         )
 
     selected_run_id = (
@@ -316,6 +326,7 @@ def run_new(
         worktree_path=(
             run_dir / "worktree"
         ),
+        base_revision=base_revision,
     )
 
     state_db = (

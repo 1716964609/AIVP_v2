@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from aivp.errors import AIVPError
 from aivp.repository.git import (
@@ -23,6 +24,43 @@ def _head_sha(repo: Path) -> str:
         "rev-parse",
         "HEAD",
     ).stdout.strip()
+
+
+def resolve_revision(
+    repo: Path,
+    revision: str,
+) -> str:
+    repo = repo.expanduser().resolve()
+
+    assert_git_repo(repo)
+
+    revision = revision.strip()
+
+    if not revision:
+        raise AIVPError(
+            "Repository revision must not be empty"
+        )
+
+    cp = git(
+        repo,
+        "rev-parse",
+        "--verify",
+        f"{revision}^{{commit}}",
+        check=False,
+    )
+
+    resolved = cp.stdout.strip()
+
+    if (
+        cp.returncode != 0
+        or not resolved
+    ):
+        raise AIVPError(
+            "Cannot resolve repository revision: "
+            f"{revision}"
+        )
+
+    return resolved
 
 
 def _git_common_dir(repo: Path) -> Path:
@@ -100,6 +138,7 @@ def create_run_worktree(
     *,
     canonical_repo: Path,
     worktree_path: Path,
+    base_revision: Optional[str] = None,
 ) -> RunWorktree:
     canonical_repo = (
         canonical_repo.expanduser().resolve()
@@ -123,8 +162,13 @@ def create_run_worktree(
             f"{worktree_path}"
         )
 
-    base_sha = _head_sha(
-        canonical_repo
+    base_sha = (
+        resolve_revision(
+            canonical_repo,
+            base_revision,
+        )
+        if base_revision is not None
+        else _head_sha(canonical_repo)
     )
 
     worktree_path.parent.mkdir(
