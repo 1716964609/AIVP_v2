@@ -6,7 +6,9 @@ from pathlib import Path
 
 from aivp.eval.graders import (
     EvalGraderError,
+    grade_diff,
     grade_expected_decision,
+    grade_risk,
     grade_trial_from_artifacts,
     grade_verification,
 )
@@ -288,6 +290,330 @@ class EvalGraderTests(unittest.TestCase):
                     "eval-test-trial-001/"
                     "status.json",
                 ),
+            )
+
+    def test_risk_passes_against_saved_aggregate(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "aggregate-risk.json",
+                {
+                    "final": "low",
+                    "human_required": False,
+                },
+            )
+
+            result = grade_risk(
+                run_dir=run_dir,
+                expected={
+                    "risk": {
+                        "final": "low",
+                        "human_required": False,
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+            self.assertTrue(
+                result.passed
+            )
+
+    def test_risk_mismatch_is_fail(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "aggregate-risk.json",
+                {
+                    "final": "high",
+                    "human_required": True,
+                },
+            )
+
+            result = grade_risk(
+                run_dir=run_dir,
+                expected={
+                    "risk": {
+                        "final": "low"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "FAIL",
+            )
+            self.assertFalse(
+                result.passed
+            )
+
+    def test_missing_risk_is_error(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            result = grade_risk(
+                run_dir=Path(td),
+                expected={
+                    "risk": {
+                        "final": "low"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "ERROR",
+            )
+
+    def test_diff_constraints_pass(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "changed-paths.json",
+                [
+                    "tests/test_username.py",
+                    "username.py",
+                ],
+            )
+
+            (
+                run_dir / "final.diff.txt"
+            ).write_text(
+                "line1\nline2\nline3\n",
+                encoding="utf-8",
+            )
+
+            result = grade_diff(
+                run_dir=run_dir,
+                expected={
+                    "diff": {
+                        "required_paths": [
+                            "username.py"
+                        ],
+                        "forbidden_paths": [
+                            ".env"
+                        ],
+                        "max_changed_files": 2,
+                        "max_diff_lines": 10,
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+            self.assertEqual(
+                result.observed[
+                    "changed_file_count"
+                ],
+                2,
+            )
+            self.assertEqual(
+                result.observed[
+                    "diff_lines"
+                ],
+                3,
+            )
+
+    def test_diff_constraint_violation_is_fail(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "changed-paths.json",
+                [
+                    ".env",
+                    "username.py",
+                ],
+            )
+
+            (
+                run_dir / "final.diff.txt"
+            ).write_text(
+                "1\n2\n3\n4\n",
+                encoding="utf-8",
+            )
+
+            result = grade_diff(
+                run_dir=run_dir,
+                expected={
+                    "diff": {
+                        "required_paths": [
+                            "tests/test_username.py"
+                        ],
+                        "forbidden_paths": [
+                            ".env"
+                        ],
+                        "max_changed_files": 1,
+                        "max_diff_lines": 2,
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "FAIL",
+            )
+            self.assertFalse(
+                result.passed
+            )
+            self.assertIn(
+                "required paths missing",
+                result.reason,
+            )
+            self.assertIn(
+                "forbidden paths changed",
+                result.reason,
+            )
+
+    def test_missing_changed_paths_is_error(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            result = grade_diff(
+                run_dir=Path(td),
+                expected={
+                    "diff": {
+                        "max_changed_files": 2
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "ERROR",
+            )
+
+    def test_exact_changed_path_set_is_order_independent(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir / "changed-paths.json",
+                [
+                    "b.py",
+                    "a.py",
+                ],
+            )
+
+            result = grade_diff(
+                run_dir=run_dir,
+                expected={
+                    "diff": {
+                        "changed_paths": [
+                            "a.py",
+                            "b.py",
+                        ]
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+
+    def test_risk_and_diff_dispatch_from_saved_artifacts(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            evaluation_root = (
+                root / "evaluation"
+            )
+            run_dir = (
+                evaluation_root
+                / "runs"
+                / "eval-test-trial-001"
+            )
+
+            self._write_json(
+                evaluation_root
+                / "case-snapshot.json",
+                {
+                    "expected": {
+                        "risk": {
+                            "final": "low"
+                        },
+                        "diff": {
+                            "max_changed_files": 1
+                        },
+                    },
+                    "graders": [
+                        "risk",
+                        "diff",
+                    ],
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "trials"
+                / "trial-001.json",
+                {
+                    "run_dir": (
+                        "runs/"
+                        "eval-test-trial-001"
+                    )
+                },
+            )
+
+            self._write_json(
+                run_dir / "aggregate-risk.json",
+                {
+                    "final": "low",
+                    "human_required": False,
+                },
+            )
+
+            self._write_json(
+                run_dir / "changed-paths.json",
+                [
+                    "username.py"
+                ],
+            )
+
+            results = (
+                grade_trial_from_artifacts(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    trial_id="trial-001",
+                )
+            )
+
+            self.assertEqual(
+                [
+                    result.grader
+                    for result in results
+                ],
+                [
+                    "risk",
+                    "diff",
+                ],
+            )
+
+            self.assertTrue(
+                all(
+                    result.passed
+                    for result in results
+                )
             )
 
     def test_run_dir_path_escape_fails_closed(
