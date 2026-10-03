@@ -46,3 +46,17 @@ __all__ += [
     "RepoMapCacheResult",
     "repo_map_cache_key",
 ]
+
+from aivp.cache.context_selection import (
+    CONTEXT_SELECTION_CACHE_VERSION,
+    CONTEXT_SELECTION_NAMESPACE,
+    ContextSelectionCache,
+    ContextSelectionCacheResult,
+)
+
+__all__ += [
+    "CONTEXT_SELECTION_CACHE_VERSION",
+    "CONTEXT_SELECTION_NAMESPACE",
+    "ContextSelectionCache",
+    "ContextSelectionCacheResult",
+]
