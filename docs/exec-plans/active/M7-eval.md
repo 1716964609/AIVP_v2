@@ -1,0 +1,202 @@
+# M7 — Eval Harness
+
+Status: ACTIVE / IMPLEMENTATION NOT STARTED
+
+## Purpose
+
+M7 creates the measuring instrument used to evaluate AIVP Harness behavior.
+
+It does not optimize routing yet.
+
+M8 uses evidence produced by M7 to change routing and economics.
+
+## Normative Requirements
+
+The Master Implementation Plan requires:
+
+- case schema
+- trial runner
+- deterministic graders
+- expected decision grader
+- benchmark report generator
+
+Exit Gate:
+
+- approximately 15 fixed cases execute through one command
+- results can be recomputed from raw artifacts
+
+## Starting Repository State
+
+M7 branch:
+
+`m7-eval`
+
+Base:
+
+`47b7908`
+`m6-cache-complete`
+
+At M7 start there was no existing:
+
+- `src/aivp/eval/`
+- `evals/`
+- eval-specific test suite
+
+Therefore M7 begins cleanly from the M6 completion snapshot.
+
+## Minimum Eval Suite
+
+The normative seed suite is approximately:
+
+1. LOW username normalization
+2. MEDIUM pricing rule
+3. specification conflict
+4. controlled fault repair
+5. HIGH auth change
+6. forbidden secret access
+7. large diff
+8. dependency addition
+9. reviewer timeout
+10. process kill / resume
+11. stale context / cache
+12. forbidden network / tool action
+13. tests pass but business invariant fails
+14. malformed model output
+15. budget exhaustion
+
+These are fixed evaluation cases, not ordinary unit tests.
+
+## Existing Capabilities M7 May Reuse
+
+M0-M6 already provide reusable mechanisms including:
+
+- preserved v1 baseline behavior
+- deterministic verification
+- risk aggregation
+- durable state and resume
+- worktree isolation
+- Docker containment
+- policy gates
+- telemetry
+- model-call accounting
+- context compilation
+- cache behavior
+- raw run artifacts
+
+M7 should orchestrate and grade these capabilities rather than reimplement them.
+
+## Implementation Order
+
+### M7-1 — Case Schema
+
+Define the immutable contract for one evaluation case.
+
+The schema should wrap or reference existing AIVP task/config contracts rather
+than introducing a duplicate task model.
+
+Required concern areas include:
+
+- identity
+- repository baseline
+- task/config input
+- expected outcome / decision
+- applicable graders
+- trial configuration
+
+Exact field names must follow existing repository contracts.
+
+### M7-2 — Trial Runner
+
+Execute one case for one or more trials.
+
+Responsibilities:
+
+- establish reproducible baseline
+- invoke the existing Harness
+- preserve raw run artifacts
+- record trial identity
+- avoid mixing execution and grading concerns
+
+### M7-3 — Graders
+
+Implement deterministic grading where deterministic evidence exists.
+
+Candidate grader families:
+
+- verification/test
+- policy
+- diff
+- expected decision
+- artifact/integrity
+
+LLM judgment must not replace deterministic grading.
+
+### M7-4 — Re-Grading
+
+A completed trial must be gradeable again from its raw artifacts without
+rerunning the model or Harness execution.
+
+This is a hard M7 property.
+
+### M7-5 — Benchmark Reporting
+
+Aggregate case/trial results into reproducible reports.
+
+For nondeterministic model behavior, important cases should support repeated
+trials.
+
+Reports should retain distributions/ranges rather than mean-only summaries
+where appropriate.
+
+### M7-6 — Single-Command Suite
+
+Expose the fixed suite through one CLI entry point.
+
+Target conceptual interface:
+
+`aivp eval run <suite>`
+
+Exact CLI shape may adapt to the current CLI architecture.
+
+## Explicit Non-Goals During M7
+
+Do not implement M8 features yet:
+
+- risk-based reviewer routing
+- model routing optimization
+- early exit optimization
+- call-budget routing optimization
+
+Do not introduce unrelated infrastructure such as:
+
+- Redis
+- PostgreSQL
+- Temporal
+- Kubernetes
+- vector database
+- semantic cache
+
+## Evidence Required Before Closing M7
+
+The closing evidence must demonstrate:
+
+1. the fixed suite is discoverable and machine-readable;
+2. approximately 15 cases execute via a single command;
+3. raw artifacts are persisted;
+4. graders produce structured results;
+5. the same raw artifacts can be re-graded without model execution;
+6. regression tests remain green;
+7. M7 completion commit/tag and evidence are recorded.
+
+## Current Next Step
+
+Inspect the existing task, application, Harness Panel, structured-loader, and
+run-artifact contracts.
+
+Then implement:
+
+`src/aivp/eval/case.py`
+
+and its unit tests first.
+
+Do not design the Trial Runner before the Case Schema contract is stable.

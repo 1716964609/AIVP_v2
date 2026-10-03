@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "project": "AIVP_v2",
+  "state_updated_for": "repository-memory-bootstrap",
+  "source_of_truth": {
+    "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
+    "as_built": "Git repository, source code, history, branches, and tags",
+    "proven": "tests, reports, benchmark raw data, SQLite, logs, and docs/evidence",
+    "historical": "docs/milestones, docs/decisions, and archived historical material"
+  },
+  "current": {
+    "milestone": "M7",
+    "name": "Eval Harness",
+    "phase": "repository-memory-bootstrap-before-m7-implementation",
+    "branch": "m7-eval",
+    "head": "47b7908",
+    "base_tag": "m6-cache-complete",
+    "working_tree_at_last_verification": "clean",
+    "active_plan": "docs/exec-plans/active/M7-eval.md"
+  },
+  "completed_milestones": {
+    "M0": {
+      "commit": "7e69d92",
+      "tag": "m0-baseline-frozen"
+    },
+    "M1": {
+      "commit": "ec57c40",
+      "tag": "m1-harness-panel-refactor"
+    },
+    "M2": {
+      "commit": "bd7373a",
+      "tag": "m2-durable-execution"
+    },
+    "M3": {
+      "commit": "4b4cf1b",
+      "tag": "m3-containment-complete"
+    },
+    "M4": {
+      "commit": "4ab5ca5",
+      "tag": "m4-telemetry-cost-ledger-complete"
+    },
+    "M5": {
+      "commit": "f12fc34",
+      "tag": "m5-context-compiler-complete"
+    },
+    "M6": {
+      "commit": "47b7908",
+      "tag": "m6-cache-complete"
+    }
+  },
+  "m7_exit_gate": [
+    "approximately 15 fixed eval cases can be executed with a single command",
+    "evaluation results can be recomputed from raw artifacts"
+  ],
+  "m7_required_build": [
+    "case schema",
+    "trial runner",
+    "deterministic graders",
+    "expected decision grader",
+    "benchmark report generator"
+  ],
+  "m7_implementation_status": {
+    "case_schema": "not_started",
+    "trial_runner": "not_started",
+    "deterministic_graders": "not_started",
+    "expected_decision_grader": "not_started",
+    "benchmark_report_generator": "not_started",
+    "fixed_eval_suite": "not_started",
+    "raw_artifact_regrading": "not_started"
+  },
+  "known_repository_evidence": {
+    "m5_context_compiler": "docs/evidence/m5-context-compiler.md",
+    "m6_cache_latency": "docs/evidence/m6-cache-latency.json",
+    "m6_provider_cache": "docs/evidence/m6-provider-cache.json",
+    "m6_cache_exit": "docs/evidence/m6-cache.md",
+    "state_database": ".aivp/state.db"
+  },
+  "pending_historical_verification": [
+    "M0 benchmark script exact path",
+    "M0 ADR-001 exact path or status",
+    "M1-M4 milestone-boundary test counts if separately preserved",
+    "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
+  ],
+  "next_action": "finish repository memory bootstrap, then implement M7 case schema against the current AIVP task and execution contracts"
+}
