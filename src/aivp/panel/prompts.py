@@ -10,12 +10,10 @@ from aivp.verification.deterministic import (
 )
 
 
-def generate_prompt(
-    task_text: str,
-    context_text: Optional[str] = None,
-) -> str:
-    parts = [
-        """You are the Generator/Fixer in a controlled code-verification experiment.
+PROMPT_LAYOUT_VERSION = "1.0.0"
+
+
+GENERATOR_STABLE_PREFIX = """You are the Generator/Fixer in a controlled code-verification experiment.
 
 Implement the task in the current Git repository.
 
@@ -29,6 +27,77 @@ Rules:
 - Stop after implementing the change; the orchestrator runs verification separately.
 
 """
+
+
+FIXER_STABLE_PREFIX = (
+    "You are the Generator/Fixer. "
+    "Fix the current working tree; "
+    "do not commit or push."
+    "\n\n"
+    "Keep the change minimal and "
+    "within the original constraints."
+    "\n\n"
+)
+
+
+REVIEW_STABLE_PREFIX = """You are an independent code reviewer. The generator is a different model.
+
+You cannot approve based on style alone. Review the change against:
+1. task and acceptance criteria
+2. correctness and edge cases
+3. regressions / missing tests
+4. security and data safety
+5. architecture / coupling / operational concerns
+
+Return ONLY one JSON object, no Markdown:
+{
+  "summary": "short summary",
+  "findings": [
+    {
+      "severity": "critical|major|minor|suggestion",
+      "category": "correctness|security|tests|architecture|operations|other",
+      "file": "path",
+      "line": 123,
+      "reason": "why this is a problem",
+      "suggested_direction": "how to address it without writing the patch"
+    }
+  ],
+  "risk": "low|medium|high",
+  "risk_confidence": 0.0,
+  "risk_reasons": ["..."]
+}
+
+Risk definitions:
+- low: local/reversible small blast radius
+- medium: meaningful behavior change but bounded/reversible
+- high: auth/security/permissions/data migration/destructive operation,
+        large cross-service blast radius, irreversible change, or uncertainty
+        requiring human judgment
+
+"""
+
+
+RISK_STABLE_PREFIX = """You are the independent final risk judge.
+
+Do NOT edit files. Assess the production/change risk of the proposed diff.
+Return only the JSON object required by the output schema.
+
+Risk definitions:
+- low: local/reversible change with small blast radius
+- medium: meaningful behavior change but bounded/reversible
+- high: auth/security/permissions/data migration/destructive operation,
+        large cross-service blast radius, irreversible change, or uncertainty
+        that requires human judgment
+
+"""
+
+
+def generate_prompt(
+    task_text: str,
+    context_text: Optional[str] = None,
+) -> str:
+    parts = [
+        GENERATOR_STABLE_PREFIX
         + task_text
     ]
 
@@ -59,16 +128,8 @@ def fix_prompt(
     context_text: Optional[str] = None,
 ) -> str:
     parts = [
-        (
-            "You are the Generator/Fixer. "
-            "Fix the current working tree; "
-            "do not commit or push."
-        ),
-        (
-            "Keep the change minimal and "
-            "within the original constraints."
-        ),
-        task_text,
+        FIXER_STABLE_PREFIX
+        + task_text,
     ]
 
     if context_text:
@@ -116,71 +177,33 @@ def review_prompt(
     diff_text: str,
     verification: Dict[str, Any],
 ) -> str:
-    return f"""You are an independent code reviewer. The generator is a different model.
-
-You cannot approve based on style alone. Review the change against:
-1. task and acceptance criteria
-2. correctness and edge cases
-3. regressions / missing tests
-4. security and data safety
-5. architecture / coupling / operational concerns
-
-Return ONLY one JSON object, no Markdown:
-{{
-  "summary": "short summary",
-  "findings": [
-    {{
-      "severity": "critical|major|minor|suggestion",
-      "category": "correctness|security|tests|architecture|operations|other",
-      "file": "path",
-      "line": 123,
-      "reason": "why this is a problem",
-      "suggested_direction": "how to address it without writing the patch"
-    }}
-  ],
-  "risk": "low|medium|high",
-  "risk_confidence": 0.0,
-  "risk_reasons": ["..."]
-}}
-
-Risk definitions:
-- low: local/reversible small blast radius
-- medium: meaningful behavior change but bounded/reversible
-- high: auth/security/permissions/data migration/destructive operation,
-        large cross-service blast radius, irreversible change, or uncertainty
-        requiring human judgment
-
-{task_text}
-
-DETERMINISTIC VERIFICATION
---------------------------
-{verification_summary(verification)}
-
-DIFF
-----
-{diff_text}
-"""
+    return (
+        REVIEW_STABLE_PREFIX
+        + task_text
+        + "\n\n"
+        + "DETERMINISTIC VERIFICATION\n"
+        + "--------------------------\n"
+        + verification_summary(
+            verification
+        )
+        + "\n\n"
+        + "DIFF\n"
+        + "----\n"
+        + diff_text
+        + "\n"
+    )
 
 
 def risk_prompt(
     task_text: str,
     diff_text: str,
 ) -> str:
-    return f"""You are the independent final risk judge.
-
-Do NOT edit files. Assess the production/change risk of the proposed diff.
-Return only the JSON object required by the output schema.
-
-Risk definitions:
-- low: local/reversible change with small blast radius
-- medium: meaningful behavior change but bounded/reversible
-- high: auth/security/permissions/data migration/destructive operation,
-        large cross-service blast radius, irreversible change, or uncertainty
-        that requires human judgment
-
-{task_text}
-
-DIFF
-----
-{diff_text}
-"""
+    return (
+        RISK_STABLE_PREFIX
+        + task_text
+        + "\n\n"
+        + "DIFF\n"
+        + "----\n"
+        + diff_text
+        + "\n"
+    )
