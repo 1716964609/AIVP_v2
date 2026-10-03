@@ -89,6 +89,20 @@ M7 should orchestrate and grade these capabilities rather than reimplement them.
 
 ### M7-1 — Case Schema
 
+Status: COMPLETE
+
+Implementation evidence:
+
+- `src/aivp/eval/case.py`
+- `tests/unit/test_eval_case.py`
+- existing AIVP task/config contracts are reused rather than duplicated
+- case contract is frozen, including nested expected values
+- relative task/config/repository references resolve from the case definition
+- grader identifiers and trial count are validated
+- 7 focused Eval Case unit tests pass
+- 255 total unit regression tests pass
+- `git diff --check` passes
+
 Define the immutable contract for one evaluation case.
 
 The schema should wrap or reference existing AIVP task/config contracts rather
@@ -106,6 +120,8 @@ Required concern areas include:
 Exact field names must follow existing repository contracts.
 
 ### M7-2 — Trial Runner
+
+Status: NEXT
 
 Execute one case for one or more trials.
 

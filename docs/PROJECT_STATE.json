@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m7-case-schema-start",
+  "state_updated_for": "m7-trial-runner-start",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M7",
     "name": "Eval Harness",
-    "phase": "m7-case-schema",
+    "phase": "m7-trial-runner",
     "branch": "m7-eval",
     "base_tag": "m6-cache-complete",
     "active_plan": "docs/exec-plans/active/M7-eval.md"
@@ -79,7 +79,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Inspect the existing task, application, Harness Panel, structured-loader, and run-artifact contracts; then implement the M7 Eval Case schema and its unit tests.",
+  "next_action": "Implement M7-2 Trial Runner: execute one EvalCase for one or more independent trials from the declared repository baseline, invoke the existing Harness, preserve raw run artifacts, and record trial identity without mixing execution and grading.",
   "repository_memory": {
     "implementation_base_commit": "47b7908",
     "implementation_base_tag": "m6-cache-complete",
