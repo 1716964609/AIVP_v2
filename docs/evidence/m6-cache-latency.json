@@ -1,0 +1,101 @@
+{
+  "version": "1.0.0",
+  "benchmark": "m6-context-cache-latency",
+  "generated_at": "2026-10-03T13:00:02.245064+00:00",
+  "environment": {
+    "python": "3.14.7",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+  },
+  "fixture": {
+    "repo_sha": "1b785d474e3e1de4222d7700c70d98cb382d5ab9",
+    "source_files": 400,
+    "test_files": 100,
+    "iterations": 30,
+    "max_files": 20,
+    "max_chars": 120000
+  },
+  "miss_ms": {
+    "median": 133.203,
+    "mean": 134.038,
+    "p95": 138.605
+  },
+  "hit_ms": {
+    "median": 8.242,
+    "mean": 8.468,
+    "p95": 9.04
+  },
+  "median_speedup_x": 16.162,
+  "median_latency_reduction_percent": 93.813,
+  "semantics": {
+    "miss": "context cache miss + repo-map cache miss + context compilation",
+    "hit": "context selection cache hit; compiler and repo-map cache skipped",
+    "model_calls": 0,
+    "provider_cost_measured": false
+  },
+  "samples_ms": {
+    "miss": [
+      134.365,
+      135.855,
+      133.054,
+      132.089,
+      144.64,
+      136.582,
+      135.333,
+      134.567,
+      133.635,
+      134.742,
+      132.296,
+      134.904,
+      132.457,
+      132.949,
+      132.228,
+      132.687,
+      132.65,
+      133.445,
+      133.148,
+      132.541,
+      132.703,
+      132.883,
+      133.13,
+      132.298,
+      133.612,
+      133.942,
+      133.466,
+      133.257,
+      133.093,
+      138.605
+    ],
+    "hit": [
+      8.911,
+      8.348,
+      7.923,
+      7.934,
+      12.663,
+      8.931,
+      8.089,
+      8.941,
+      8.5,
+      8.667,
+      8.476,
+      8.605,
+      8.061,
+      8.319,
+      7.968,
+      8.217,
+      8.17,
+      8.502,
+      8.239,
+      8.192,
+      7.98,
+      8.049,
+      8.168,
+      8.184,
+      8.245,
+      8.433,
+      8.481,
+      8.064,
+      7.755,
+      9.04
+    ]
+  }
+}
