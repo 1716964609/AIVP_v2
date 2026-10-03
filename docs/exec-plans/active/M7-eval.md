@@ -151,21 +151,32 @@ Responsibilities:
 
 ### M7-3 — Graders
 
-Status: NEXT
+Status: COMPLETE
 
-Implement deterministic grading where deterministic evidence exists.
+Implementation evidence:
 
-Candidate grader families:
+- `b7a6dc9` adds expected-decision and verification graders
+- `b91079b` adds risk-artifact and diff graders
+- `76a07c2` adds policy and artifact-integrity grading
+- `c8f2b20` adds reviewer and human-calibration graders
+- graders consume preserved run artifacts rather than rerunning Harness execution
+- expected-decision grading distinguishes expected terminal outcomes
+- verification grading evaluates the latest numeric verification round
+- diff grading supports exact/required/forbidden paths and size limits
+- policy grading distinguishes policy denial/human gates from other terminal outcomes
+- artifact-integrity grading validates evaluation-local SHA-256 and size snapshots
+- reviewer grading reuses existing AIVP blocking-finding semantics
+- human calibration compares frozen human labels against saved reviewer decisions
+- grade outcomes distinguish `PASS`, `FAIL`, and `ERROR`
+- 293 total unit regression tests pass
+- `git diff --check` passes
 
-- verification/test
-- policy
-- diff
-- expected decision
-- artifact/integrity
-
-LLM judgment must not replace deterministic grading.
+Deterministic grading is used where deterministic evidence exists.
+Saved LLM-review artifacts are graded without making new model calls.
 
 ### M7-4 — Re-Grading
+
+Status: NEXT
 
 A completed trial must be gradeable again from its raw artifacts without
 rerunning the model or Harness execution.
