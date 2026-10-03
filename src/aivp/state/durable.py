@@ -404,12 +404,14 @@ def complete_verification(
     task: Mapping[str, Any],
     config: Mapping[str, Any],
     verification: Mapping[str, Any],
+    verification_round: int,
 ) -> None:
     verification_path = (
         runtime.run_dir
         / (
             "durable-verification-"
-            f"{durable.attempt}.json"
+            f"{durable.attempt}-"
+            f"{verification_round}.json"
         )
     )
 
@@ -421,7 +423,8 @@ def complete_verification(
     artifact_id = (
         f"{durable.run_id}:"
         f"verification:"
-        f"{durable.attempt}"
+        f"{durable.attempt}:"
+        f"{verification_round}"
     )
 
     artifact_sha = sha256_file(
@@ -456,6 +459,9 @@ def complete_verification(
         ),
         "state": "VERIFIED",
         "attempt": durable.attempt,
+        "verification_round": (
+            verification_round
+        ),
         "repo_path": str(
             repo.resolve()
         ),
@@ -503,7 +509,8 @@ def complete_verification(
         step_id=(
             f"{durable.run_id}:"
             f"verify:"
-            f"{durable.attempt}"
+            f"{durable.attempt}:"
+            f"{verification_round}"
         ),
         run_id=durable.run_id,
         step_type="verify",

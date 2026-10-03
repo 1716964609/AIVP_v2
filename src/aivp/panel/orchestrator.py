@@ -1159,6 +1159,10 @@ def execute_panel(
                                 verification=(
                                     verification
                                 ),
+                                verification_round=(
+                                    runtime.counters
+                                    .fix_iterations
+                                ),
                             )
 
                 if not verification[
