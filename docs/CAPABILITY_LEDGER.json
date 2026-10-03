@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "project": "AIVP_v2",
+  "purpose": "Capability-oriented canonical memory. Milestones describe history; this ledger describes what abilities exist and what evidence supports them.",
+  "status_legend": {
+    "proven": "implementation exists and supporting evidence is known",
+    "implemented": "implementation exists but complete proof is not recorded here",
+    "deferred": "explicitly excluded from the current implementation",
+    "not_started": "planned but not implemented"
+  },
+  "capabilities": [
+    {
+      "name": "v1_baseline_freeze",
+      "planned_milestone": "M0",
+      "status": "proven",
+      "completion": {
+        "commit": "7e69d92",
+        "tag": "m0-baseline-frozen"
+      },
+      "evidence": [
+        "Git commit/tag verified",
+        "v1 baseline run corpus historically preserved",
+        "v1 task/config identities historically hashed"
+      ]
+    },
+    {
+      "name": "legacy_v1_compatibility_anchor",
+      "planned_milestone": "M1",
+      "status": "proven",
+      "completion": {
+        "commit": "ec57c40",
+        "tag": "m1-harness-panel-refactor"
+      },
+      "evidence": [
+        "frozen v1 orchestrator imported as compatibility anchor",
+        "legacy compatibility tests remain in regression suite"
+      ]
+    },
+    {
+      "name": "model_adapter_abstraction",
+      "planned_milestone": "M1",
+      "status": "proven",
+      "completion": {
+        "commit": "ec57c40",
+        "tag": "m1-harness-panel-refactor"
+      },
+      "evidence": [
+        "Codex and Claude adapter implementations",
+        "model contract and compatibility tests"
+      ]
+    },
+    {
+      "name": "deterministic_verifier_abstraction",
+      "planned_milestone": "M1",
+      "status": "proven",
+      "completion": {
+        "commit": "ec57c40",
+        "tag": "m1-harness-panel-refactor"
+      }
+    },
+    {
+      "name": "risk_engine_abstraction",
+      "planned_milestone": "M1",
+      "status": "proven",
+      "completion": {
+        "commit": "ec57c40",
+        "tag": "m1-harness-panel-refactor"
+      }
+    },
+    {
+      "name": "artifact_registry",
+      "planned_milestone": "M1",
+      "status": "proven",
+      "completion": {
+        "commit": "ec57c40",
+        "tag": "m1-harness-panel-refactor"
+      }
+    },
+    {
+      "name": "explicit_state_machine",
+      "planned_milestone": "M2",
+      "status": "proven",
+      "completion": {
+        "commit": "bd7373a",
+        "tag": "m2-durable-execution"
+      },
+      "evidence": [
+        "state-machine implementation",
+        "state transition tests"
+      ]
+    },
+    {
+      "name": "sqlite_durable_state",
+      "planned_milestone": "M2",
+      "status": "proven",
+      "completion": {
+        "commit": "bd7373a",
+        "tag": "m2-durable-execution"
+      },
+      "evidence": [
+        "SQLite state store",
+        ".aivp/state.db exists",
+        "state-store regression tests"
+      ]
+    },
+    {
+      "name": "checkpoint_resume",
+      "planned_milestone": "M2",
+      "status": "proven",
+      "completion": {
+        "commit": "bd7373a",
+        "tag": "m2-durable-execution"
+      },
+      "evidence": [
+        "resume CLI",
+        "checkpoint identity validation",
+        "hard-process-crash integration tests",
+        "completed expensive steps are not intentionally repeated"
+      ]
+    },
+    {
+      "name": "artifact_integrity_validation",
+      "planned_milestone": "M2",
+      "status": "proven",
+      "completion": {
+        "commit": "bd7373a",
+        "tag": "m2-durable-execution"
+      },
+      "evidence": [
+        "corrupt checkpoint/artifact fail-closed tests"
+      ]
+    },
+    {
+      "name": "per_run_git_worktree",
+      "planned_milestone": "M3",
+      "status": "proven",
+      "completion": {
+        "commit": "4b4cf1b",
+        "tag": "m3-containment-complete"
+      }
+    },
+    {
+      "name": "docker_verification_sandbox",
+      "planned_milestone": "M3",
+      "status": "proven",
+      "completion": {
+        "commit": "4b4cf1b",
+        "tag": "m3-containment-complete"
+      },
+      "evidence": [
+        "network isolation",
+        "non-root execution",
+        "read-only root filesystem",
+        "host environment isolation",
+        "canonical repository hidden from sandbox"
+      ]
+    },
+    {
+      "name": "capability_policy",
+      "planned_milestone": "M3",
+      "status": "proven",
+      "completion": {
+        "commit": "4b4cf1b",
+        "tag": "m3-containment-complete"
+      },
+      "evidence": [
+        "default-deny capability policy",
+        "production/sensitive policy tests"
+      ]
+    },
+    {
+      "name": "diff_path_guard",
+      "planned_milestone": "M3",
+      "status": "proven",
+      "completion": {
+        "commit": "4b4cf1b",
+        "tag": "m3-containment-complete"
+      }
+    },
+    {
+      "name": "structured_tracing",
+      "planned_milestone": "M4",
+      "status": "proven",
+      "completion": {
+        "commit": "4ab5ca5",
+        "tag": "m4-telemetry-cost-ledger-complete"
+      },
+      "evidence": [
+        "run tracing",
+        "command tracing",
+        "model-call tracing"
+      ]
+    },
+    {
+      "name": "model_call_ledger",
+      "planned_milestone": "M4",
+      "status": "proven",
+      "completion": {
+        "commit": "4ab5ca5",
+        "tag": "m4-telemetry-cost-ledger-complete"
+      },
+      "evidence": [
+        "durable model-call ledger",
+        "provider token normalization",
+        "pricing estimator/catalog"
+      ]
+    },
+    {
+      "name": "telemetry_privacy",
+      "planned_milestone": "M4",
+      "status": "proven",
+      "completion": {
+        "commit": "4ab5ca5",
+        "tag": "m4-telemetry-cost-ledger-complete"
+      },
+      "evidence": [
+        "sensitive command data protection",
+        "sanitized telemetry metadata",
+        "privacy-safe failed-call accounting"
+      ]
+    },
+    {
+      "name": "run_summary",
+      "planned_milestone": "M4",
+      "status": "proven",
+      "completion": {
+        "commit": "4ab5ca5",
+        "tag": "m4-telemetry-cost-ledger-complete"
+      }
+    },
+    {
+      "name": "context_compiler",
+      "planned_milestone": "M5",
+      "status": "proven",
+      "completion": {
+        "commit": "f12fc34",
+        "tag": "m5-context-compiler-complete"
+      },
+      "evidence": [
+        "repo map",
+        "deterministic relevant-file selector",
+        "test association",
+        "one-hop import-neighbor expansion",
+        "context budget",
+        "manifest/hash",
+        "docs/evidence/m5-context-compiler.md"
+      ]
+    },
+    {
+      "name": "m5_controlled_context_reduction",
+      "planned_milestone": "M5",
+      "status": "proven",
+      "completion": {
+        "commit": "f12fc34",
+        "tag": "m5-context-compiler-complete"
+      },
+      "evidence": [
+        "provider input tokens 413779 -> 110790",
+        "73.22 percent provider-input reduction",
+        "controlled quality case preserved"
+      ],
+      "limitations": [
+        "one controlled case",
+        "no latency-improvement claim"
+      ]
+    },
+    {
+      "name": "filesystem_cas",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      }
+    },
+    {
+      "name": "sqlite_cache_metadata",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      }
+    },
+    {
+      "name": "repository_map_cache",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      }
+    },
+    {
+      "name": "context_selection_cache",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      }
+    },
+    {
+      "name": "cache_invalidation_and_fail_closed_integrity",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      },
+      "evidence": [
+        "deliberate stale-cache test",
+        "StateIntegrityError before fallback",
+        "docs/evidence/m6-cache.md"
+      ]
+    },
+    {
+      "name": "provider_cache_friendly_prompt_layout",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      },
+      "evidence": [
+        "stable prefix before dynamic content",
+        "docs/evidence/m6-provider-cache.json"
+      ]
+    },
+    {
+      "name": "m6_local_cache_latency_evidence",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      },
+      "evidence": [
+        "median miss 133.203 ms",
+        "median hit 8.242 ms",
+        "16.162x median speedup",
+        "93.813 percent median context-preparation latency reduction",
+        "docs/evidence/m6-cache-latency.json"
+      ],
+      "limitations": [
+        "synthetic fixture",
+        "context preparation only; not end-to-end AIVP latency"
+      ]
+    },
+    {
+      "name": "m6_provider_prompt_cache_hit",
+      "planned_milestone": "M6",
+      "status": "proven",
+      "completion": {
+        "commit": "47b7908",
+        "tag": "m6-cache-complete"
+      },
+      "evidence": [
+        "second controlled call: 22052 input tokens",
+        "11008 cached tokens",
+        "49.918 percent cached",
+        "docs/evidence/m6-provider-cache.json"
+      ],
+      "limitations": [
+        "two-call evidence",
+        "no causal latency claim",
+        "no total billing-reduction claim"
+      ]
+    },
+    {
+      "name": "semantic_cache",
+      "planned_milestone": "post-v2_or_stretch",
+      "status": "deferred",
+      "reason": "Exact computational identity is required before semantic reuse; fuzzy task equivalence was intentionally not accepted in M6."
+    },
+    {
+      "name": "eval_harness",
+      "planned_milestone": "M7",
+      "status": "not_started"
+    },
+    {
+      "name": "risk_based_routing_and_economics",
+      "planned_milestone": "M8",
+      "status": "not_started"
+    }
+  ]
+}

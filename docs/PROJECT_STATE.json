@@ -11,11 +11,9 @@
   "current": {
     "milestone": "M7",
     "name": "Eval Harness",
-    "phase": "repository-memory-bootstrap-before-m7-implementation",
+    "phase": "repository-memory-bootstrap",
     "branch": "m7-eval",
-    "head": "47b7908",
     "base_tag": "m6-cache-complete",
-    "working_tree_at_last_verification": "clean",
     "active_plan": "docs/exec-plans/active/M7-eval.md"
   },
   "completed_milestones": {
@@ -81,5 +79,16 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "finish repository memory bootstrap, then implement M7 case schema against the current AIVP task and execution contracts"
+  "next_action": "Finish canonical M0-M6 repository memory, then implement M7 case schema against current repository contracts.",
+  "repository_memory": {
+    "implementation_base_commit": "47b7908",
+    "implementation_base_tag": "m6-cache-complete",
+    "repository_memory_bootstrap_commit": "4e503f1",
+    "rule": "Do not persist a dynamic current HEAD here. Read live HEAD and working-tree state from Git at session bootstrap."
+  },
+  "runtime_verification": {
+    "read_live_head_from_git": true,
+    "verify_working_tree_at_session_start": true,
+    "verify_active_branch_at_session_start": true
+  }
 }
