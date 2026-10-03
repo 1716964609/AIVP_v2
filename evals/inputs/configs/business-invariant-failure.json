@@ -17,7 +17,7 @@
       "--output-format",
       "json"
     ],
-    "max_turns": 2
+    "max_turns": 4
   },
   "context": {
     "enabled": false
