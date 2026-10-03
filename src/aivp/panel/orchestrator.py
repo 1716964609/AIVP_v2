@@ -26,6 +26,7 @@ from aivp.errors import (
     BudgetExceeded,
     CommandFailed,
     HumanApprovalRequired,
+    ModelOutputError,
     PolicyDenied,
     StateIntegrityError,
 )
@@ -1613,10 +1614,32 @@ def execute_panel(
 
             return run_dir
 
-        except CommandFailed as exc:
+        except (
+            CommandFailed,
+            ModelOutputError,
+        ) as exc:
             escalation_reason = str(
                 exc
             )
+
+            model_failure_metrics: Dict[
+                str,
+                Any,
+            ] = {
+                "model_call_failed": True,
+            }
+
+            if isinstance(
+                exc,
+                CommandFailed,
+            ):
+                model_failure_metrics[
+                    "model_returncode"
+                ] = exc.returncode
+            else:
+                model_failure_metrics[
+                    "model_output_invalid"
+                ] = True
 
             if durable is not None:
                 complete_terminal_outcome(
@@ -1632,12 +1655,7 @@ def execute_panel(
             metrics = write_metrics(
                 runtime,
                 "HUMAN_REQUIRED",
-                {
-                    "model_call_failed": True,
-                    "model_returncode": (
-                        exc.returncode
-                    ),
-                },
+                model_failure_metrics,
             )
 
             artifacts.register(

@@ -3,7 +3,7 @@ import re
 
 from typing import Any, Dict
 
-from aivp.errors import AIVPError
+from aivp.errors import ModelOutputError
 
 
 def extract_json_object(
@@ -13,7 +13,7 @@ def extract_json_object(
     text = text.strip()
 
     if not text:
-        raise AIVPError(
+        raise ModelOutputError(
             "Empty JSON response"
         )
 
@@ -62,6 +62,6 @@ def extract_json_object(
         except json.JSONDecodeError:
             continue
 
-    raise AIVPError(
+    raise ModelOutputError(
         "Could not parse JSON object from model output"
     )

@@ -16,6 +16,11 @@ class CommandFailed(AIVPError):
         self.returncode = returncode
 
 
+class ModelOutputError(AIVPError):
+    """Model process succeeded but required structured output was invalid."""
+    pass
+
+
 class StateIntegrityError(AIVPError):
     pass
 
