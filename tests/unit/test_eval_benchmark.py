@@ -91,7 +91,9 @@ class EvalBenchmarkTests(
                 / "trials"
                 / f"{trial_id}.json",
                 {
-                    "status": "COMPLETED",
+                    "execution_status": (
+                        "COMPLETED"
+                    ),
                     "run_dir": (
                         run_relative
                     ),

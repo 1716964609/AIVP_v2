@@ -330,7 +330,7 @@ def regrade_evaluation(
 
             source_status = (
                 trial_manifest.get(
-                    "status"
+                    "execution_status"
                 )
             )
 

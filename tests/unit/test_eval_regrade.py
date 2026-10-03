@@ -85,7 +85,9 @@ class EvalRegradeTests(unittest.TestCase):
                 / "trials"
                 / f"{trial_id}.json",
                 {
-                    "status": "COMPLETED",
+                    "execution_status": (
+                        "COMPLETED"
+                    ),
                     "run_dir": run_relative,
                 },
             )
@@ -264,6 +266,52 @@ class EvalRegradeTests(unittest.TestCase):
                 "FAIL",
             )
 
+    def test_regrade_uses_runner_execution_status_contract(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            evaluation_root = (
+                self._evaluation(root)
+            )
+
+            trial_path = (
+                evaluation_root
+                / "trials"
+                / "trial-001.json"
+            )
+
+            trial = json.loads(
+                trial_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertIn(
+                "execution_status",
+                trial,
+            )
+
+            self.assertNotIn(
+                "status",
+                trial,
+            )
+
+            result = regrade_evaluation(
+                evaluation_root=(
+                    evaluation_root
+                ),
+                regrade_id=(
+                    "regrade-contract"
+                ),
+            )
+
+            self.assertEqual(
+                result.overall_outcome,
+                "PASS",
+            )
+
     def test_noncompleted_trial_is_recorded_as_error(
         self,
     ):
@@ -286,7 +334,9 @@ class EvalRegradeTests(unittest.TestCase):
                 )
             )
 
-            trial["status"] = "FAILED"
+            trial[
+                "execution_status"
+            ] = "FAILED"
 
             self._write_json(
                 trial_path,
