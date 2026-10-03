@@ -26,6 +26,7 @@
       "name": "repair-target",
       "argv": [
         "python",
+        "-B",
         "-c",
         "from evals.fixture_app.repair_target import answer; assert answer() == 1"
       ],
