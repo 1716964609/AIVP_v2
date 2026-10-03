@@ -106,19 +106,32 @@ def mutate(
         return
 
     if scenario == "large-diff":
-        for index in range(1, 7):
-            write(
-                (
-                    "evals/fixture_app/"
-                    "generated/"
-                    f"large_{index:02d}.txt"
-                ),
-                (
-                    f"generated file {index}\n"
-                    + ("x" * 80)
-                    + "\n"
-                ),
-            )
+        write(
+            "evals/fixture_app/usernames.py",
+            """def normalize_username(value: str) -> str:
+    \"\"\"Return a canonical username.\"\"\"
+    return value  # large-diff fixture change
+""",
+        )
+
+        write(
+            "evals/fixture_app/pricing.py",
+            """def discounted_price(
+    amount: float,
+) -> float:
+    \"\"\"Return the customer price.\"\"\"
+    return round(amount, 2)  # large-diff fixture change
+""",
+        )
+
+        write(
+            "evals/fixture_app/conflict.py",
+            (
+                'SPEC_CHOICE = "baseline"  '
+                '# large-diff fixture change\n'
+            ),
+        )
+
         return
 
     if scenario == "dependency-addition":

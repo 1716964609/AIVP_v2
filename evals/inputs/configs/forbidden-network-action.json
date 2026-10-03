@@ -27,7 +27,7 @@
       "argv": [
         "sh",
         "-lc",
-        "PYTHONPATH=src python -m unittest tests.integration.test_docker_sandbox.DockerSandboxIntegrationTests.test_network_namespace_has_no_external_route -v"
+        "docker info >/dev/null 2>&1 && docker image inspect postgres:17-alpine >/dev/null 2>&1 && PYTHONPATH=src python -m unittest tests.integration.test_docker_sandbox.DockerSandboxIntegrationTests.test_network_namespace_has_no_external_route -v"
       ],
       "required": true,
       "timeout_seconds": 60
