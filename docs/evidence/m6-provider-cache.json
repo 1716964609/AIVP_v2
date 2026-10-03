@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "benchmark": "m6-provider-prompt-cache",
+  "model_requested": "gpt-5.6-luna",
+  "calls": 2,
+  "stable_prefix": {
+    "sha256": "2d242e0504ff92ddf8ee94012c7475f91c42f1327b9e9783bddc2f50a4d956dd",
+    "chars": 30301,
+    "content_persisted": false
+  },
+  "dynamic_suffix_changed": true,
+  "results": [
+    {
+      "call": 1,
+      "label": "A",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "elapsed_ms": 6509.108,
+      "input_tokens": 22742,
+      "cached_tokens": 0,
+      "cached_ratio_percent": 0.0,
+      "output_tokens": 19,
+      "cost_estimate_usd": null,
+      "raw_exit_status": 0
+    },
+    {
+      "call": 2,
+      "label": "B",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "elapsed_ms": 5345.618,
+      "input_tokens": 22052,
+      "cached_tokens": 11008,
+      "cached_ratio_percent": 49.918,
+      "output_tokens": 19,
+      "cost_estimate_usd": null,
+      "raw_exit_status": 0
+    }
+  ],
+  "interpretation": {
+    "provider_cache_hit_evidence": true,
+    "actual_subscription_charge_measured": false,
+    "pricing_note": "Dollar cost is not computed here. Use the versioned AIVP pricing catalog or a separately documented public API pricing snapshot."
+  }
+}
