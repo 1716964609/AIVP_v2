@@ -12,6 +12,10 @@ from aivp.application import (
     run_new,
 )
 from aivp.errors import AIVPError
+from aivp.eval.suite import (
+    load_eval_suite,
+    run_eval_suite,
+)
 from aivp.structured import load_structured
 
 
@@ -89,6 +93,65 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "required for a real run"
+        ),
+    )
+
+    eval_parser = (
+        subparsers.add_parser(
+            "eval",
+            help=(
+                "run evaluation suites"
+            ),
+        )
+    )
+
+    eval_subparsers = (
+        eval_parser.add_subparsers(
+            dest="eval_command",
+            required=True,
+        )
+    )
+
+    eval_run_parser = (
+        eval_subparsers.add_parser(
+            "run",
+            help=(
+                "run a fixed eval suite"
+            ),
+        )
+    )
+
+    eval_run_parser.add_argument(
+        "suite",
+        type=Path,
+    )
+
+    eval_run_parser.add_argument(
+        "--reports",
+        type=Path,
+        default=Path(
+            "./reports/eval"
+        ),
+    )
+
+    eval_run_parser.add_argument(
+        "--state-db",
+        type=Path,
+        default=Path(
+            "./.aivp/state.db"
+        ),
+    )
+
+    eval_run_parser.add_argument(
+        "--suite-run-id",
+        default=None,
+    )
+
+    eval_run_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help=(
+            "required for real eval runs"
         ),
     )
 
@@ -177,6 +240,69 @@ def main(
             )
 
             return 0
+
+        if args.command == "eval":
+            if (
+                args.eval_command
+                == "run"
+            ):
+                if not args.yes:
+                    print(
+                        "ERROR: refusing real "
+                        "eval run without --yes",
+                        file=sys.stderr,
+                    )
+                    return 2
+
+                suite = (
+                    load_eval_suite(
+                        args.suite
+                        .expanduser()
+                        .resolve()
+                    )
+                )
+
+                result = run_eval_suite(
+                    suite,
+                    reports_root=(
+                        args.reports
+                    ),
+                    state_db=(
+                        args.state_db
+                    ),
+                    suite_run_id=(
+                        args.suite_run_id
+                    ),
+                )
+
+                print(
+                    "SUITE_RUN_ID="
+                    f"{result.suite_run_id}"
+                )
+
+                print(
+                    "SUITE_DIR="
+                    f"{result.suite_root}"
+                )
+
+                print(
+                    "SUITE_OUTCOME="
+                    f"{result.overall_outcome}"
+                )
+
+                return (
+                    0
+                    if (
+                        result
+                        .overall_outcome
+                        == "PASS"
+                    )
+                    else 1
+                )
+
+            parser.error(
+                "unknown eval command"
+            )
 
         if args.command == "resume":
             print(
