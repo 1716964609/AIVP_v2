@@ -4,7 +4,7 @@
   "description": "Conflicting specification should require human judgment.",
   "repository": {
     "path": "../..",
-    "revision": "HEAD"
+    "revision": "891655b84060186f6019bd43a2273d204574dc13"
   },
   "inputs": {
     "task": "../inputs/tasks/specification-conflict.json",
@@ -22,6 +22,6 @@
     "artifact-integrity"
   ],
   "trials": {
-    "count": 1
+    "count": 3
   }
 }

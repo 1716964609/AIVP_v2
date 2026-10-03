@@ -4,7 +4,7 @@
   "description": "Controlled verification failure followed by bounded repair.",
   "repository": {
     "path": "../..",
-    "revision": "HEAD"
+    "revision": "891655b84060186f6019bd43a2273d204574dc13"
   },
   "inputs": {
     "task": "../inputs/tasks/controlled-fault-repair.json",
