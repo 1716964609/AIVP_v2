@@ -121,7 +121,23 @@ Exact field names must follow existing repository contracts.
 
 ### M7-2 — Trial Runner
 
-Status: NEXT
+Status: COMPLETE
+
+Implementation evidence:
+
+- `bc9e3cf` adds explicit repository baseline support
+- `src/aivp/eval/runner.py`
+- `tests/unit/test_explicit_baseline.py`
+- `tests/unit/test_eval_runner.py`
+- declared repository revision is resolved to one exact commit SHA per evaluation
+- every trial executes against the same resolved baseline
+- canonical repository HEAD remains unchanged
+- task/config/case expectations are snapshotted for later re-grading
+- evaluation and per-trial manifests preserve execution identity and status
+- Harness execution failures are recorded before being re-raised
+- unexpected run-directory contract violations fail closed and are recorded
+- 264 total unit regression tests pass
+- `git diff --check` passes
 
 Execute one case for one or more trials.
 
@@ -134,6 +150,8 @@ Responsibilities:
 - avoid mixing execution and grading concerns
 
 ### M7-3 — Graders
+
+Status: NEXT
 
 Implement deterministic grading where deterministic evidence exists.
 
