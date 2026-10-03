@@ -29,7 +29,6 @@ class ContextCacheWiringTests(
         self.repo = (
             self.root / "repo"
         )
-
         self.repo.mkdir()
 
         git(
@@ -90,37 +89,54 @@ class ContextCacheWiringTests(
     def tearDown(self):
         self.tempdir.cleanup()
 
-    def test_second_compilation_hits_repo_map_cache(
+    def test_second_compilation_hits_context_cache_and_skips_compiler(
         self,
     ):
         (
             first,
-            first_cache,
+            first_context,
+            first_repo_map,
         ) = _compile_context_with_cache(
             self.request,
             cache_root=self.cache_root,
         )
 
-        self.assertIsNotNone(
-            first_cache
-        )
         self.assertFalse(
-            first_cache.cache_hit
+            first_context.cache_hit
         )
 
-        with patch(
-            (
-                "aivp.cache.repo_map."
-                "build_repo_map"
+        self.assertFalse(
+            first_repo_map.cache_hit
+        )
+
+        with (
+            patch(
+                (
+                    "aivp.panel."
+                    "orchestrator."
+                    "compile_context"
+                ),
+                side_effect=AssertionError(
+                    "compiler must not run"
+                ),
             ),
-            side_effect=AssertionError(
-                "repo map builder "
-                "must not run"
+            patch(
+                (
+                    "aivp.panel."
+                    "orchestrator."
+                    "RepoMapCache."
+                    "get_or_build"
+                ),
+                side_effect=AssertionError(
+                    "repo map cache "
+                    "must not run"
+                ),
             ),
         ):
             (
                 second,
-                second_cache,
+                second_context,
+                second_repo_map,
             ) = (
                 _compile_context_with_cache(
                     self.request,
@@ -130,36 +146,84 @@ class ContextCacheWiringTests(
                 )
             )
 
-        self.assertIsNotNone(
-            second_cache
-        )
         self.assertTrue(
-            second_cache.cache_hit
+            second_context.cache_hit
+        )
+
+        self.assertIsNone(
+            second_repo_map
         )
 
         self.assertEqual(
-            first.artifact,
-            second.artifact,
+            second,
+            first,
         )
 
-        self.assertEqual(
-            first.manifest_json,
-            second.manifest_json,
-        )
-
-    def test_new_commit_invalidates_repo_map_cache(
+    def test_task_change_misses_context_but_hits_repo_map(
         self,
     ):
         (
             _,
-            first_cache,
+            first_context,
+            first_repo_map,
         ) = _compile_context_with_cache(
             self.request,
             cache_root=self.cache_root,
         )
 
         self.assertFalse(
-            first_cache.cache_hit
+            first_context.cache_hit
+        )
+
+        self.assertFalse(
+            first_repo_map.cache_hit
+        )
+
+        other_request = ContextRequest(
+            repo=self.repo,
+            task_text=(
+                "Change another_function"
+            ),
+            budget=(
+                self.request.budget
+            ),
+        )
+
+        (
+            _,
+            second_context,
+            second_repo_map,
+        ) = _compile_context_with_cache(
+            other_request,
+            cache_root=self.cache_root,
+        )
+
+        self.assertFalse(
+            second_context.cache_hit
+        )
+
+        self.assertTrue(
+            second_repo_map.cache_hit
+        )
+
+    def test_new_commit_invalidates_both_cache_layers(
+        self,
+    ):
+        (
+            _,
+            first_context,
+            first_repo_map,
+        ) = _compile_context_with_cache(
+            self.request,
+            cache_root=self.cache_root,
+        )
+
+        self.assertFalse(
+            first_context.cache_hit
+        )
+
+        self.assertFalse(
+            first_repo_map.cache_hit
         )
 
         (
@@ -184,19 +248,29 @@ class ContextCacheWiringTests(
 
         (
             _,
-            second_cache,
+            second_context,
+            second_repo_map,
         ) = _compile_context_with_cache(
             self.request,
             cache_root=self.cache_root,
         )
 
         self.assertFalse(
-            second_cache.cache_hit
+            second_context.cache_hit
+        )
+
+        self.assertFalse(
+            second_repo_map.cache_hit
         )
 
         self.assertNotEqual(
-            first_cache.cache_key,
-            second_cache.cache_key,
+            first_context.cache_key,
+            second_context.cache_key,
+        )
+
+        self.assertNotEqual(
+            first_repo_map.cache_key,
+            second_repo_map.cache_key,
         )
 
     def test_cache_can_be_disabled(
@@ -204,14 +278,19 @@ class ContextCacheWiringTests(
     ):
         (
             compilation,
-            cache_result,
+            context_result,
+            repo_map_result,
         ) = _compile_context_with_cache(
             self.request,
             cache_root=None,
         )
 
         self.assertIsNone(
-            cache_result
+            context_result
+        )
+
+        self.assertIsNone(
+            repo_map_result
         )
 
         self.assertTrue(

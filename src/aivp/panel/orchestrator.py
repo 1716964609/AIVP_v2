@@ -16,8 +16,10 @@ from aivp.artifacts.io import (
 from aivp.artifacts.registry import ArtifactRegistry
 from aivp.cache import (
     ContentAddressedCache,
+    ContextSelectionCache,
     RepoMapCache,
     SQLiteCacheIndex,
+    context_cache_identity,
 )
 from aivp.errors import (
     AIVPError,
@@ -31,6 +33,7 @@ from aivp.context.base import (
     ContextRequest,
 )
 from aivp.context.compiler import (
+    COMPILER_VERSION,
     compile_context,
 )
 from aivp.execution.runtime import Runtime
@@ -114,6 +117,7 @@ def _compile_context_with_cache(
         return (
             compile_context(request),
             None,
+            None,
         )
 
     repo_sha = git(
@@ -128,6 +132,20 @@ def _compile_context_with_cache(
             "is empty"
         )
 
+    identity = context_cache_identity(
+        repo_sha=repo_sha,
+        task_text=request.task_text,
+        compiler_version=(
+            COMPILER_VERSION
+        ),
+        max_files=(
+            request.budget.max_files
+        ),
+        max_chars=(
+            request.budget.max_chars
+        ),
+    )
+
     cache_root = (
         cache_root
         .expanduser()
@@ -141,22 +159,54 @@ def _compile_context_with_cache(
     with SQLiteCacheIndex(
         cache_root / "cache.sqlite"
     ) as index:
-        cache_result = RepoMapCache(
-            cas=cas,
-            index=index,
-        ).get_or_build(
-            repo=request.repo,
-            repo_sha=repo_sha,
+        context_cache = (
+            ContextSelectionCache(
+                cas=cas,
+                index=index,
+            )
         )
 
-    compilation = compile_context(
-        request,
-        repo_map=cache_result.entries,
-    )
+        context_result = (
+            context_cache.get(
+                identity=identity
+            )
+        )
+
+        if context_result is not None:
+            return (
+                context_result.compilation,
+                context_result,
+                None,
+            )
+
+        repo_map_result = (
+            RepoMapCache(
+                cas=cas,
+                index=index,
+            ).get_or_build(
+                repo=request.repo,
+                repo_sha=repo_sha,
+            )
+        )
+
+        compilation = compile_context(
+            request,
+            repo_map=(
+                repo_map_result.entries
+            ),
+        )
+
+        context_result = (
+            context_cache.put(
+                identity=identity,
+                compilation=compilation,
+            )
+        )
 
     return (
         compilation,
-        cache_result,
+        context_result,
+        repo_map_result,
     )
 
 
@@ -808,6 +858,7 @@ def execute_panel(
             if resume_plan is None:
                 (
                     compilation,
+                    context_cache_result,
                     repo_map_cache_result,
                 ) = (
                     _compile_context_with_cache(
@@ -819,6 +870,26 @@ def execute_panel(
                         cache_root=cache_root,
                     )
                 )
+
+                if (
+                    context_cache_result
+                    is not None
+                ):
+                    runtime.log_event(
+                        "context_selection_cache",
+                        cache_hit=(
+                            context_cache_result
+                            .cache_hit
+                        ),
+                        cache_key=(
+                            context_cache_result
+                            .cache_key
+                        ),
+                        object_sha256=(
+                            context_cache_result
+                            .object_sha256
+                        ),
+                    )
 
                 if (
                     repo_map_cache_result
