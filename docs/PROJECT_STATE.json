@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m7-regrading-start",
+  "state_updated_for": "m7-benchmark-reporting-start",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M7",
     "name": "Eval Harness",
-    "phase": "m7-regrading",
+    "phase": "m7-benchmark-reporting",
     "branch": "m7-eval",
     "base_tag": "m6-cache-complete",
     "active_plan": "docs/exec-plans/active/M7-eval.md"
@@ -62,9 +62,9 @@
     "trial_runner": "complete",
     "deterministic_graders": "complete",
     "expected_decision_grader": "complete",
-    "benchmark_report_generator": "not_started",
+    "benchmark_report_generator": "in_progress",
     "fixed_eval_suite": "not_started",
-    "raw_artifact_regrading": "in_progress"
+    "raw_artifact_regrading": "complete"
   },
   "known_repository_evidence": {
     "m5_context_compiler": "docs/evidence/m5-context-compiler.md",
@@ -79,7 +79,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Implement M7-4 raw-artifact re-grading: enumerate completed evaluation trials, grade them exclusively from preserved artifacts, and write versioned regrade outputs without rerunning the Harness or models.",
+  "next_action": "Implement M7-5 benchmark reporting over preserved trial and re-grade artifacts. Aggregate reproducible case/trial outcomes and retain distributions/ranges for nondeterministic measurements without rerunning the Harness or models.",
   "repository_memory": {
     "implementation_base_commit": "47b7908",
     "implementation_base_tag": "m6-cache-complete",

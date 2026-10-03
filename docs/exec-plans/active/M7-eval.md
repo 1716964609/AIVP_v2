@@ -176,14 +176,32 @@ Saved LLM-review artifacts are graded without making new model calls.
 
 ### M7-4 — Re-Grading
 
-Status: NEXT
+Status: COMPLETE
 
-A completed trial must be gradeable again from its raw artifacts without
+Implementation evidence:
+
+- `3b56f7e` adds raw-artifact re-grading
+- `src/aivp/eval/regrade.py`
+- `tests/unit/test_eval_regrade.py`
+- completed trials are re-graded exclusively from preserved evaluation artifacts
+- re-grading does not invoke Harness execution, models, or external commands
+- re-grading does not modify source evaluation evidence
+- each re-grade writes a separate versioned output directory
+- prior re-grade results are preserved rather than overwritten
+- incomplete source trials are represented as re-grade `ERROR`
+- evaluation outcome remains distinct from re-grade execution status
+- 52 Eval Harness unit tests pass
+- 300 total unit regression tests pass
+- `git diff --check` passes
+
+A completed trial is gradeable again from its raw artifacts without
 rerunning the model or Harness execution.
 
-This is a hard M7 property.
+This hard M7 property is now implemented.
 
 ### M7-5 — Benchmark Reporting
+
+Status: NEXT
 
 Aggregate case/trial results into reproducible reports.
 
