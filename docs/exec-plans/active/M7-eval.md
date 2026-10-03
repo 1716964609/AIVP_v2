@@ -200,3 +200,47 @@ Then implement:
 and its unit tests first.
 
 Do not design the Trial Runner before the Case Schema contract is stable.
+
+## Milestone Closure Gate
+
+M7 is not COMPLETE merely because the implementation works.
+
+The milestone closes only when both the technical Exit Gate and project
+continuity requirements are satisfied.
+
+### Technical
+
+- [ ] Functional M7 Exit Gate is satisfied.
+- [ ] Approximately 15 fixed cases execute through one command.
+- [ ] Required success and failure cases are exercised.
+- [ ] Raw trial artifacts are preserved.
+- [ ] Deterministic graders produce structured results.
+- [ ] Expected-decision grading works.
+- [ ] Completed trials can be re-graded from raw artifacts without model execution.
+- [ ] Full unit/integration regression passes.
+
+### Evidence
+
+- [ ] M7 evidence is written under `docs/evidence/`.
+- [ ] Claims can be recomputed from raw artifacts.
+- [ ] Trial counts and nondeterministic ranges/distributions are recorded where applicable.
+- [ ] Negative results and known limitations are preserved.
+- [ ] No favorable metric is promoted without corresponding quality evidence.
+
+### Repository Memory
+
+- [ ] `docs/milestones/M7.md` is finalized.
+- [ ] `docs/CAPABILITY_LEDGER.json` is updated.
+- [ ] `docs/PROJECT_STATE.json` records M7 completion and the next milestone.
+- [ ] Important design deviations and decisions are recorded.
+- [ ] This active execution plan is closed or moved to `docs/exec-plans/completed/`.
+
+### Git Closure
+
+- [ ] `git diff --check` passes.
+- [ ] Completion commit is created.
+- [ ] Completion tag is created.
+- [ ] Working tree is clean.
+
+Only after all applicable items above are satisfied may M7 be recorded as
+COMPLETE.

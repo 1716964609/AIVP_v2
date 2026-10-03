@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "repository-memory-bootstrap",
+  "state_updated_for": "m7-case-schema-start",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M7",
     "name": "Eval Harness",
-    "phase": "repository-memory-bootstrap",
+    "phase": "m7-case-schema",
     "branch": "m7-eval",
     "base_tag": "m6-cache-complete",
     "active_plan": "docs/exec-plans/active/M7-eval.md"
@@ -79,7 +79,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Finish canonical M0-M6 repository memory, then implement M7 case schema against current repository contracts.",
+  "next_action": "Inspect the existing task, application, Harness Panel, structured-loader, and run-artifact contracts; then implement the M7 Eval Case schema and its unit tests.",
   "repository_memory": {
     "implementation_base_commit": "47b7908",
     "implementation_base_tag": "m6-cache-complete",
@@ -90,5 +90,11 @@
     "read_live_head_from_git": true,
     "verify_working_tree_at_session_start": true,
     "verify_active_branch_at_session_start": true
+  },
+  "continuity": {
+    "repository_memory": "bootstrapped",
+    "context_bootstrap_script": "scripts/context-bootstrap.sh",
+    "bootstrap_usage": "./scripts/context-bootstrap.sh",
+    "rule": "At a new AI session, generate the context packet from live Git and repository memory. Load deeper history only when required."
   }
 }
