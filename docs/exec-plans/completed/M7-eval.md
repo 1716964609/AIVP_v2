@@ -321,6 +321,14 @@ COMPLETE.
 
 ## M7 Closure Evidence
 
+Completion evidence commit:
+
+`ec499e0a601023a5187d474e7b596662ff89abee`
+
+Completion tag:
+
+`m7-eval-harness-complete`
+
 Formal clean run:
 
 `m7-final-clean-20261004-072204`

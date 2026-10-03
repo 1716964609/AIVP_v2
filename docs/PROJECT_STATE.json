@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m7-single-command-suite-start",
+  "state_updated_for": "m7-complete-m8-ready",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -9,12 +9,12 @@
     "historical": "docs/milestones, docs/decisions, and archived historical material"
   },
   "current": {
-    "milestone": "M7",
-    "name": "Eval Harness",
-    "phase": "m7-single-command-suite",
+    "milestone": "M8",
+    "name": "Risk-based Routing / Economics",
+    "phase": "ready_to_start",
     "branch": "m7-eval",
-    "base_tag": "m6-cache-complete",
-    "active_plan": "docs/exec-plans/active/M7-eval.md"
+    "base_tag": "m7-eval-harness-complete",
+    "active_plan": null
   },
   "completed_milestones": {
     "M0": {
@@ -44,6 +44,10 @@
     "M6": {
       "commit": "47b7908",
       "tag": "m6-cache-complete"
+    },
+    "M7": {
+      "commit": "ec499e0a601023a5187d474e7b596662ff89abee",
+      "tag": "m7-eval-harness-complete"
     }
   },
   "m7_exit_gate": [
@@ -63,7 +67,7 @@
     "deterministic_graders": "complete",
     "expected_decision_grader": "complete",
     "benchmark_report_generator": "complete",
-    "fixed_eval_suite": "in_progress",
+    "fixed_eval_suite": "complete",
     "raw_artifact_regrading": "complete"
   },
   "known_repository_evidence": {
@@ -71,7 +75,10 @@
     "m6_cache_latency": "docs/evidence/m6-cache-latency.json",
     "m6_provider_cache": "docs/evidence/m6-provider-cache.json",
     "m6_cache_exit": "docs/evidence/m6-cache.md",
-    "state_database": ".aivp/state.db"
+    "state_database": ".aivp/state.db",
+    "m7_eval_exit": "docs/evidence/m7-eval.md",
+    "m7_eval_summary": "docs/evidence/m7-eval-summary.json",
+    "m7_milestone": "docs/milestones/M7.md"
   },
   "pending_historical_verification": [
     "M0 benchmark script exact path",
@@ -79,10 +86,10 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Implement M7-6 fixed evaluation suite and one-command execution. Make approximately 15 machine-readable fixed cases discoverable and executable through the existing CLI architecture, producing preserved trials, re-grades, and benchmark reports without introducing M8 routing behavior.",
+  "next_action": "Start M8 Risk-based Routing / Economics from the frozen M7 quality baseline. Create the M8 execution plan and branch before changing routing behavior. Implement deterministic risk floor, review routing, model/call budget routing, and early exit while preserving M7 eval quality.",
   "repository_memory": {
-    "implementation_base_commit": "47b7908",
-    "implementation_base_tag": "m6-cache-complete",
+    "implementation_base_commit": "ec499e0a601023a5187d474e7b596662ff89abee",
+    "implementation_base_tag": "m7-eval-harness-complete",
     "repository_memory_bootstrap_commit": "4e503f1",
     "rule": "Do not persist a dynamic current HEAD here. Read live HEAD and working-tree state from Git at session bootstrap."
   },
@@ -96,5 +103,29 @@
     "context_bootstrap_script": "scripts/context-bootstrap.sh",
     "bootstrap_usage": "./scripts/context-bootstrap.sh",
     "rule": "At a new AI session, generate the context packet from live Git and repository memory. Load deeper history only when required."
+  },
+  "m7_completion": {
+    "completion_commit": "ec499e0a601023a5187d474e7b596662ff89abee",
+    "completion_tag": "m7-eval-harness-complete",
+    "frozen_implementation_baseline": "891655b84060186f6019bd43a2273d204574dc13",
+    "frozen_corpus_commit": "54500b1",
+    "formal_run": "m7-final-clean-20261004-072204",
+    "fixed_cases": 15,
+    "case_pass": 15,
+    "case_fail": 0,
+    "case_error": 0,
+    "trials": 27,
+    "regrade_001_results": 27,
+    "regrade_002_results": 27,
+    "offline_regrade_matches": 27,
+    "offline_regrade_mismatches": 0,
+    "benchmark_reports": 15,
+    "baseline_sha_mismatches": 0,
+    "source_evidence_files": 7255,
+    "source_evidence_changed": 0,
+    "unit_tests_pass": 323,
+    "integration_tests_pass": 11,
+    "git_diff_check": "PASS",
+    "live_provider_usd_cost": "UNAVAILABLE"
   }
 }

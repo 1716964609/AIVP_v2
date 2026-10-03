@@ -376,7 +376,31 @@
     {
       "name": "eval_harness",
       "planned_milestone": "M7",
-      "status": "not_started"
+      "status": "proven",
+      "completion": {
+        "commit": "ec499e0a601023a5187d474e7b596662ff89abee",
+        "tag": "m7-eval-harness-complete"
+      },
+      "evidence": [
+        "docs/evidence/m7-eval.md",
+        "docs/evidence/m7-eval-summary.json",
+        "docs/milestones/M7.md",
+        "15 fixed cases executed through one CLI command",
+        "15 of 15 cases PASS",
+        "27 preserved trial manifests",
+        "27 regrade-001 results",
+        "15 benchmark reports",
+        "27 of 27 offline regrade-002 results reproduced regrade-001",
+        "7255 source evidence files remained byte-identical during offline re-grading",
+        "323 unit tests PASS",
+        "11 integration tests PASS"
+      ],
+      "limitations": [
+        "Six major behavioral cases use three trials; most deterministic/fault cases use one.",
+        "Provider/model behavior remains nondeterministic.",
+        "Live-provider USD cost coverage is unavailable.",
+        "Risk-based routing, call budget routing, and early exit remain M8 work."
+      ]
     },
     {
       "name": "risk_based_routing_and_economics",
