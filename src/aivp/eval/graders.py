@@ -11,6 +11,10 @@ from aivp.errors import (
     AIVPError,
     StateIntegrityError,
 )
+from aivp.models.claude import (
+    blocking_findings,
+    normalize_findings,
+)
 from aivp.state.integrity import validate_artifact
 from aivp.structured import load_structured
 
@@ -19,6 +23,10 @@ GRADE_RESULT_VERSION = "1.0.0"
 
 _VERIFICATION_RE = re.compile(
     r"^round-(\d+)\.verification\.json$"
+)
+
+_REVIEW_RE = re.compile(
+    r"^claude-review-(\d+)\.json$"
 )
 
 
@@ -788,6 +796,420 @@ def grade_diff(
     )
 
 
+def _latest_review(
+    run_dir: Path,
+) -> Optional[Path]:
+    candidates = []
+
+    for path in run_dir.glob(
+        "claude-review-*.json"
+    ):
+        match = _REVIEW_RE.fullmatch(
+            path.name
+        )
+
+        if match is None:
+            continue
+
+        candidates.append(
+            (
+                int(match.group(1)),
+                path,
+            )
+        )
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda item: item[0]
+    )
+
+    return candidates[-1][1]
+
+
+def _reviewer_observation(
+    *,
+    run_dir: Path,
+) -> Tuple[Path, Mapping[str, Any]]:
+    review_path = _latest_review(
+        run_dir
+    )
+
+    if review_path is None:
+        raise EvalGraderError(
+            "No claude-review-N.json "
+            "artifact exists"
+        )
+
+    review = _load_json_mapping(
+        review_path
+    )
+
+    raw_findings = review.get(
+        "findings"
+    )
+
+    if not isinstance(
+        raw_findings,
+        list,
+    ):
+        raise EvalGraderError(
+            "Reviewer artifact findings "
+            "must be a list"
+        )
+
+    if not all(
+        isinstance(item, dict)
+        for item in raw_findings
+    ):
+        raise EvalGraderError(
+            "Reviewer artifact contains "
+            "malformed finding entries"
+        )
+
+    findings = normalize_findings(
+        raw_findings
+    )
+
+    blockers = blocking_findings(
+        {
+            "findings": findings
+        }
+    )
+
+    risk = review.get("risk")
+
+    if not isinstance(
+        risk,
+        str,
+    ):
+        raise EvalGraderError(
+            "Reviewer artifact risk "
+            "must be a string"
+        )
+
+    risk = risk.strip().lower()
+
+    if risk not in {
+        "low",
+        "medium",
+        "high",
+    }:
+        raise EvalGraderError(
+            "Reviewer artifact contains "
+            "invalid risk"
+        )
+
+    observation = {
+        "decision": (
+            "REJECT"
+            if blockers
+            else "ACCEPT"
+        ),
+        "risk": risk,
+        "finding_count": len(
+            findings
+        ),
+        "blocking_findings": len(
+            blockers
+        ),
+    }
+
+    return (
+        review_path,
+        observation,
+    )
+
+
+def grade_reviewer(
+    *,
+    run_dir: Path,
+    expected: Mapping[str, Any],
+    evidence_prefix: str = "",
+) -> GradeResult:
+    reviewer_expected = expected.get(
+        "reviewer"
+    )
+
+    if not isinstance(
+        reviewer_expected,
+        Mapping,
+    ):
+        raise EvalGraderError(
+            "reviewer grader requires "
+            "expected.reviewer mapping"
+        )
+
+    allowed = {
+        "decision",
+        "risk",
+        "max_findings",
+        "max_blocking_findings",
+    }
+
+    unknown = (
+        set(reviewer_expected.keys())
+        - allowed
+    )
+
+    if unknown:
+        raise EvalGraderError(
+            "Unsupported expected.reviewer "
+            "field(s): "
+            + ", ".join(sorted(unknown))
+        )
+
+    if not reviewer_expected:
+        raise EvalGraderError(
+            "expected.reviewer must contain "
+            "at least one criterion"
+        )
+
+    normalized_expected = {}
+
+    if "decision" in reviewer_expected:
+        decision = reviewer_expected[
+            "decision"
+        ]
+
+        if not isinstance(
+            decision,
+            str,
+        ):
+            raise EvalGraderError(
+                "expected.reviewer.decision "
+                "must be a string"
+            )
+
+        decision = (
+            decision.strip().upper()
+        )
+
+        if decision not in {
+            "ACCEPT",
+            "REJECT",
+        }:
+            raise EvalGraderError(
+                "expected.reviewer.decision "
+                "must be ACCEPT or REJECT"
+            )
+
+        normalized_expected[
+            "decision"
+        ] = decision
+
+    if "risk" in reviewer_expected:
+        risk = reviewer_expected[
+            "risk"
+        ]
+
+        if not isinstance(
+            risk,
+            str,
+        ):
+            raise EvalGraderError(
+                "expected.reviewer.risk "
+                "must be a string"
+            )
+
+        risk = risk.strip().lower()
+
+        if risk not in {
+            "low",
+            "medium",
+            "high",
+        }:
+            raise EvalGraderError(
+                "expected.reviewer.risk "
+                "must be low, medium, or high"
+            )
+
+        normalized_expected[
+            "risk"
+        ] = risk
+
+    for field in (
+        "max_findings",
+        "max_blocking_findings",
+    ):
+        if field in reviewer_expected:
+            normalized_expected[field] = (
+                _non_negative_int(
+                    reviewer_expected[field],
+                    field=(
+                        "expected.reviewer."
+                        f"{field}"
+                    ),
+                )
+            )
+
+    try:
+        review_path, observed = (
+            _reviewer_observation(
+                run_dir=run_dir
+            )
+        )
+    except EvalGraderError as exc:
+        return _error_result(
+            grader="reviewer",
+            expected=normalized_expected,
+            evidence=(),
+            reason=str(exc),
+        )
+
+    evidence = (
+        f"{evidence_prefix}"
+        f"{review_path.name}",
+    )
+
+    failures = []
+
+    if "decision" in normalized_expected:
+        if (
+            observed["decision"]
+            != normalized_expected[
+                "decision"
+            ]
+        ):
+            failures.append(
+                "reviewer decision differs"
+            )
+
+    if "risk" in normalized_expected:
+        if (
+            observed["risk"]
+            != normalized_expected["risk"]
+        ):
+            failures.append(
+                "reviewer risk differs"
+            )
+
+    if "max_findings" in normalized_expected:
+        if (
+            observed["finding_count"]
+            > normalized_expected[
+                "max_findings"
+            ]
+        ):
+            failures.append(
+                "reviewer finding count "
+                "exceeds maximum"
+            )
+
+    if (
+        "max_blocking_findings"
+        in normalized_expected
+    ):
+        if (
+            observed["blocking_findings"]
+            > normalized_expected[
+                "max_blocking_findings"
+            ]
+        ):
+            failures.append(
+                "reviewer blocking finding "
+                "count exceeds maximum"
+            )
+
+    passed = not failures
+
+    return GradeResult(
+        grader="reviewer",
+        outcome=(
+            "PASS"
+            if passed
+            else "FAIL"
+        ),
+        passed=passed,
+        expected=normalized_expected,
+        observed=observed,
+        evidence=evidence,
+        reason=(
+            None
+            if passed
+            else "; ".join(failures)
+        ),
+    )
+
+
+def grade_human_calibration(
+    *,
+    run_dir: Path,
+    expected: Mapping[str, Any],
+    evidence_prefix: str = "",
+) -> GradeResult:
+    calibration = expected.get(
+        "human_calibration"
+    )
+
+    if not isinstance(
+        calibration,
+        Mapping,
+    ):
+        raise EvalGraderError(
+            "human-calibration grader "
+            "requires "
+            "expected.human_calibration "
+            "mapping"
+        )
+
+    decision = calibration.get(
+        "decision"
+    )
+
+    if not isinstance(
+        decision,
+        str,
+    ):
+        raise EvalGraderError(
+            "expected.human_calibration."
+            "decision must be a string"
+        )
+
+    expected_decision = (
+        decision.strip().upper()
+    )
+
+    if expected_decision not in {
+        "ACCEPT",
+        "REJECT",
+    }:
+        raise EvalGraderError(
+            "expected.human_calibration."
+            "decision must be "
+            "ACCEPT or REJECT"
+        )
+
+    try:
+        review_path, observation = (
+            _reviewer_observation(
+                run_dir=run_dir
+            )
+        )
+    except EvalGraderError as exc:
+        return _error_result(
+            grader="human-calibration",
+            expected=expected_decision,
+            evidence=(),
+            reason=str(exc),
+        )
+
+    evidence = (
+        f"{evidence_prefix}"
+        f"{review_path.name}",
+    )
+
+    return _comparison_result(
+        grader="human-calibration",
+        expected=expected_decision,
+        observed=observation[
+            "decision"
+        ],
+        evidence=evidence,
+    )
+
+
 def grade_policy(
     *,
     run_dir: Path,
@@ -1394,6 +1816,26 @@ def grade_trial_from_artifacts(
                 evidence_prefix=(
                     evidence_prefix
                 ),
+            )
+
+        elif grader == "reviewer":
+            result = grade_reviewer(
+                run_dir=run_dir,
+                expected=expected,
+                evidence_prefix=(
+                    evidence_prefix
+                ),
+            )
+
+        elif grader == "human-calibration":
+            result = (
+                grade_human_calibration(
+                    run_dir=run_dir,
+                    expected=expected,
+                    evidence_prefix=(
+                        evidence_prefix
+                    ),
+                )
             )
 
         elif grader == "artifact-integrity":

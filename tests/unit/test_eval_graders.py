@@ -10,6 +10,8 @@ from aivp.eval.graders import (
     grade_diff,
     grade_expected_decision,
     grade_policy,
+    grade_reviewer,
+    grade_human_calibration,
     grade_risk,
     grade_trial_from_artifacts,
     grade_verification,
@@ -1033,6 +1035,310 @@ class EvalGraderTests(unittest.TestCase):
                 [
                     "policy",
                     "artifact-integrity",
+                ],
+            )
+
+            self.assertEqual(
+                [
+                    result.outcome
+                    for result in results
+                ],
+                [
+                    "PASS",
+                    "PASS",
+                ],
+            )
+
+    def test_reviewer_uses_latest_review_and_accepts_minor_findings(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "category": (
+                                "correctness"
+                            ),
+                        }
+                    ],
+                    "risk": "high",
+                },
+            )
+
+            self._write_json(
+                run_dir
+                / "claude-review-1.json",
+                {
+                    "findings": [
+                        {
+                            "severity": "minor",
+                            "category": "tests",
+                        }
+                    ],
+                    "risk": "low",
+                },
+            )
+
+            result = grade_reviewer(
+                run_dir=run_dir,
+                expected={
+                    "reviewer": {
+                        "decision": "ACCEPT",
+                        "risk": "low",
+                        "max_findings": 1,
+                        "max_blocking_findings": 0,
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+            self.assertEqual(
+                result.observed[
+                    "decision"
+                ],
+                "ACCEPT",
+            )
+            self.assertEqual(
+                result.evidence,
+                (
+                    "claude-review-1.json",
+                ),
+            )
+
+    def test_reviewer_rejects_major_finding(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "category": (
+                                "security"
+                            ),
+                        }
+                    ],
+                    "risk": "high",
+                },
+            )
+
+            result = grade_reviewer(
+                run_dir=run_dir,
+                expected={
+                    "reviewer": {
+                        "decision": "REJECT"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+            self.assertEqual(
+                result.observed[
+                    "blocking_findings"
+                ],
+                1,
+            )
+
+    def test_malformed_reviewer_artifact_is_error(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": {
+                        "not": "a-list"
+                    },
+                    "risk": "low",
+                },
+            )
+
+            result = grade_reviewer(
+                run_dir=run_dir,
+                expected={
+                    "reviewer": {
+                        "decision": "ACCEPT"
+                    }
+                },
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "ERROR",
+            )
+
+    def test_human_calibration_agrees_with_reviewer(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": [
+                        {
+                            "severity": "minor",
+                            "category": "tests",
+                        }
+                    ],
+                    "risk": "low",
+                },
+            )
+
+            result = (
+                grade_human_calibration(
+                    run_dir=run_dir,
+                    expected={
+                        "human_calibration": {
+                            "decision": "ACCEPT"
+                        }
+                    },
+                )
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "PASS",
+            )
+
+    def test_human_calibration_disagreement_is_fail(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td)
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "category": (
+                                "correctness"
+                            ),
+                        }
+                    ],
+                    "risk": "medium",
+                },
+            )
+
+            result = (
+                grade_human_calibration(
+                    run_dir=run_dir,
+                    expected={
+                        "human_calibration": {
+                            "decision": "ACCEPT"
+                        }
+                    },
+                )
+            )
+
+            self.assertEqual(
+                result.outcome,
+                "FAIL",
+            )
+            self.assertEqual(
+                result.observed,
+                "REJECT",
+            )
+
+    def test_reviewer_and_human_calibration_dispatch_from_saved_artifacts(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            evaluation_root = (
+                root / "evaluation"
+            )
+
+            run_dir = (
+                evaluation_root
+                / "runs"
+                / "eval-test-trial-001"
+            )
+
+            self._write_json(
+                run_dir
+                / "claude-review-0.json",
+                {
+                    "findings": [],
+                    "risk": "low",
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "case-snapshot.json",
+                {
+                    "expected": {
+                        "reviewer": {
+                            "decision": "ACCEPT",
+                            "risk": "low",
+                        },
+                        "human_calibration": {
+                            "decision": "ACCEPT"
+                        },
+                    },
+                    "graders": [
+                        "reviewer",
+                        "human-calibration",
+                    ],
+                },
+            )
+
+            self._write_json(
+                evaluation_root
+                / "trials"
+                / "trial-001.json",
+                {
+                    "run_dir": (
+                        "runs/"
+                        "eval-test-trial-001"
+                    )
+                },
+            )
+
+            results = (
+                grade_trial_from_artifacts(
+                    evaluation_root=(
+                        evaluation_root
+                    ),
+                    trial_id="trial-001",
+                )
+            )
+
+            self.assertEqual(
+                [
+                    result.grader
+                    for result in results
+                ],
+                [
+                    "reviewer",
+                    "human-calibration",
                 ],
             )
 
