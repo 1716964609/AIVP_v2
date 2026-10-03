@@ -1,12 +1,20 @@
+import json
 import tempfile
 import unittest
 
 from pathlib import Path
 from unittest.mock import patch
 
+from aivp.cache import (
+    CONTEXT_SELECTION_NAMESPACE,
+    SQLiteCacheIndex,
+)
 from aivp.context import (
     ContextBudget,
     ContextRequest,
+)
+from aivp.errors import (
+    StateIntegrityError,
 )
 from aivp.panel.orchestrator import (
     _compile_context_with_cache,
@@ -272,6 +280,103 @@ class ContextCacheWiringTests(
             first_repo_map.cache_key,
             second_repo_map.cache_key,
         )
+
+    def test_stale_context_cache_fails_closed_before_fallback(
+        self,
+    ):
+        (
+            _,
+            first_context,
+            _,
+        ) = _compile_context_with_cache(
+            self.request,
+            cache_root=self.cache_root,
+        )
+
+        with SQLiteCacheIndex(
+            self.cache_root
+            / "cache.sqlite"
+        ) as index:
+            entry = index.get(
+                namespace=(
+                    CONTEXT_SELECTION_NAMESPACE
+                ),
+                cache_key=(
+                    first_context.cache_key
+                ),
+            )
+
+            self.assertIsNotNone(
+                entry
+            )
+
+            metadata = dict(
+                entry.metadata
+            )
+
+            metadata["identity"] = {
+                "stale": True
+            }
+
+            index.connection.execute(
+                """
+                UPDATE cache_entries
+                SET metadata_json = ?
+                WHERE namespace = ?
+                  AND cache_key = ?
+                """,
+                (
+                    json.dumps(
+                        metadata,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    (
+                        CONTEXT_SELECTION_NAMESPACE
+                    ),
+                    (
+                        first_context.cache_key
+                    ),
+                ),
+            )
+
+            index.connection.commit()
+
+        with (
+            patch(
+                (
+                    "aivp.panel."
+                    "orchestrator."
+                    "compile_context"
+                ),
+                side_effect=AssertionError(
+                    "compiler fallback "
+                    "must not run"
+                ),
+            ),
+            patch(
+                (
+                    "aivp.panel."
+                    "orchestrator."
+                    "RepoMapCache."
+                    "get_or_build"
+                ),
+                side_effect=AssertionError(
+                    "repo-map fallback "
+                    "must not run"
+                ),
+            ),
+        ):
+            with self.assertRaises(
+                StateIntegrityError
+            ):
+                _compile_context_with_cache(
+                    self.request,
+                    cache_root=(
+                        self.cache_root
+                    ),
+                )
+
 
     def test_cache_can_be_disabled(
         self,
