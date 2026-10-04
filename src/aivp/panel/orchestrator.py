@@ -4,6 +4,7 @@ import datetime as dt
 import contextlib
 import time
 import uuid
+from dataclasses import asdict
 
 
 from pathlib import Path
@@ -85,6 +86,11 @@ from aivp.repository.git import (
 from aivp.risk.aggregate import normalize_risk
 from aivp.risk.base import RiskEngine
 from aivp.risk.engine import LegacyCompatibleRiskEngine
+from aivp.risk.routing import (
+    aggregate_terminal_high,
+    route_codex_risk,
+)
+from aivp.risk.rules import rule_based_risk
 from aivp.state.durable import (
     DurableExecution,
     begin_generation,
@@ -1358,34 +1364,11 @@ def execute_panel(
                         "final Claude review missing"
                     )
 
-                codex_risk = _invoke_risk(
-                    adapter=risk_judge,
-                    runtime=runtime,
-                    artifacts=artifacts,
-                    repo=repo,
-                    task_text=task_text,
-                    diff_text=final_diff,
-                    policy=policy,
-                    durable=durable,
+                rule_risk = rule_based_risk(
+                    config,
+                    paths,
+                    final_diff,
                 )
-
-                assessed = (
-                    risk_engine.assess(
-                        config=config,
-                        paths=paths,
-                        diff_text=final_diff,
-                        codex_risk=codex_risk,
-                        claude_review=review,
-                    )
-                )
-
-                rule_risk = assessed[
-                    "rule"
-                ]
-
-                aggregate = assessed[
-                    "aggregate"
-                ]
 
                 _write_json(
                     artifacts,
@@ -1394,6 +1377,71 @@ def execute_panel(
                     / "rule-risk.json",
                     rule_risk,
                 )
+
+                routing = route_codex_risk(
+                    rule_risk=rule_risk,
+                    claude_review=review,
+                    verification_passed=bool(
+                        verification
+                        and verification.get(
+                            "passed"
+                        )
+                        is True
+                    ),
+                )
+
+                _write_json(
+                    artifacts,
+                    "risk-routing",
+                    run_dir
+                    / "risk-routing.json",
+                    asdict(routing),
+                )
+
+                if routing.invoke_codex_risk:
+                    codex_risk = _invoke_risk(
+                        adapter=risk_judge,
+                        runtime=runtime,
+                        artifacts=artifacts,
+                        repo=repo,
+                        task_text=task_text,
+                        diff_text=final_diff,
+                        policy=policy,
+                        durable=durable,
+                    )
+
+                    assessed = (
+                        risk_engine.assess(
+                            config=config,
+                            paths=paths,
+                            diff_text=final_diff,
+                            codex_risk=codex_risk,
+                            claude_review=review,
+                        )
+                    )
+
+                    assessed_rule = assessed[
+                        "rule"
+                    ]
+
+                    if assessed_rule != rule_risk:
+                        raise AIVPError(
+                            "Risk rule changed between "
+                            "routing and aggregation"
+                        )
+
+                    aggregate = assessed[
+                        "aggregate"
+                    ]
+                else:
+                    codex_risk = None
+
+                    aggregate = (
+                        aggregate_terminal_high(
+                            rule_risk=rule_risk,
+                            claude_review=review,
+                        )
+                    )
 
                 _write_json(
                     artifacts,

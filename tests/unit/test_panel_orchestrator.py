@@ -722,6 +722,130 @@ class HarnessPanelTests(
             )
 
 
+
+    def test_claude_high_skips_redundant_codex_risk(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+            runtime = self.make_runtime(root)
+
+            risk_judge = FakeModel(
+                runtime,
+                "codex",
+                [],
+            )
+
+            review_high = json.dumps(
+                {
+                    "summary": "high risk",
+                    "findings": [],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "high"
+                    ],
+                }
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=FakeModel(
+                    runtime,
+                    "codex",
+                    ["generated"],
+                ),
+                reviewer=FakeModel(
+                    runtime,
+                    "claude",
+                    [review_high],
+                ),
+                risk_judge=risk_judge,
+                verifier=FakeVerifier(
+                    [passed()]
+                ),
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertEqual(
+                risk_judge.requests,
+                [],
+            )
+
+            self.assertFalse(
+                (
+                    run_dir
+                    / "codex-risk.json"
+                ).exists()
+            )
+
+            routing = json.loads(
+                (
+                    run_dir
+                    / "risk-routing.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                routing[
+                    "invoke_codex_risk"
+                ]
+            )
+
+            self.assertEqual(
+                routing["mode"],
+                "terminal_high",
+            )
+
+            aggregate = json.loads(
+                (
+                    run_dir
+                    / "aggregate-risk.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                aggregate["final"],
+                "high",
+            )
+
+            self.assertTrue(
+                aggregate[
+                    "human_required"
+                ]
+            )
+
+            self.assertIsNone(
+                aggregate["sources"][
+                    "codex"
+                ]
+            )
+
     def test_resume_after_generation_does_not_regenerate(
         self,
     ):

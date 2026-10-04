@@ -1,6 +1,7 @@
 import unittest
 
 from aivp.risk.routing import (
+    aggregate_terminal_high,
     route_codex_risk,
 )
 
@@ -217,6 +218,53 @@ class RiskRoutingTests(
         self.assertTrue(
             decision.invoke_codex_risk
         )
+
+
+    def test_terminal_high_aggregate_records_skipped_codex(
+        self,
+    ):
+        aggregate = aggregate_terminal_high(
+            rule_risk=self.rule(
+                "high"
+            ),
+            claude_review=self.review(
+                risk="low"
+            ),
+        )
+
+        self.assertEqual(
+            aggregate["final"],
+            "high",
+        )
+
+        self.assertTrue(
+            aggregate["human_required"]
+        )
+
+        self.assertIsNone(
+            aggregate["sources"]["codex"]
+        )
+
+        self.assertEqual(
+            aggregate["routing_mode"],
+            "terminal_high",
+        )
+
+    def test_terminal_high_aggregate_rejects_non_high_inputs(
+        self,
+    ):
+        with self.assertRaises(
+            ValueError
+        ):
+            aggregate_terminal_high(
+                rule_risk=self.rule(
+                    "low"
+                ),
+                claude_review=self.review(
+                    risk="low"
+                ),
+            )
+
 
 
 if __name__ == "__main__":

@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from aivp.risk.aggregate import normalize_risk
+from aivp.risk.aggregate import (
+    RISK_ORDER,
+    normalize_risk,
+)
 
 
 @dataclass(frozen=True)
@@ -157,3 +160,48 @@ def route_codex_risk(
             verification_passed
         ),
     )
+
+
+def aggregate_terminal_high(
+    *,
+    rule_risk: Dict[str, Any],
+    claude_review: Dict[str, Any],
+) -> Dict[str, Any]:
+    deterministic_risk = normalize_risk(
+        rule_risk.get("risk")
+    )
+
+    claude_risk = normalize_risk(
+        claude_review.get("risk")
+    )
+
+    if (
+        deterministic_risk != "high"
+        and claude_risk != "high"
+    ):
+        raise ValueError(
+            "terminal HIGH aggregation requires "
+            "deterministic or Claude HIGH risk"
+        )
+
+    observed_disagreement = (
+        abs(
+            RISK_ORDER[deterministic_risk]
+            - RISK_ORDER[claude_risk]
+        )
+        >= 2
+    )
+
+    return {
+        "final": "high",
+        "sources": {
+            "rule": deterministic_risk,
+            "codex": None,
+            "claude": claude_risk,
+        },
+        "large_disagreement": (
+            observed_disagreement
+        ),
+        "human_required": True,
+        "routing_mode": "terminal_high",
+    }
