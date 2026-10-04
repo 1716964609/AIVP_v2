@@ -274,3 +274,154 @@ def changed_paths(
                 paths.add(line)
 
     return sorted(paths)
+
+
+def worktree_fingerprint(
+    repo: Path,
+) -> str:
+    """
+    Return a deterministic fingerprint of the Git-visible
+    working-tree state.
+
+    This covers:
+    - tracked unstaged changes
+    - staged changes
+    - untracked paths
+    - full bytes of untracked files, including binary/large files
+
+    Ignored files are intentionally outside the Git-visible patch
+    contract. A no-op repair therefore means no meaningful Git patch
+    was produced.
+    """
+    digest = hashlib.sha256()
+
+    status = git(
+        repo,
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+    ).stdout
+
+    digest.update(
+        b"STATUS\0"
+    )
+    digest.update(
+        status.encode(
+            "utf-8",
+            errors="surrogateescape",
+        )
+    )
+
+    diff = git(
+        repo,
+        "diff",
+        "--no-ext-diff",
+        "--binary",
+    ).stdout
+
+    digest.update(
+        b"UNSTAGED\0"
+    )
+    digest.update(
+        diff.encode(
+            "utf-8",
+            errors="surrogateescape",
+        )
+    )
+
+    cached = git(
+        repo,
+        "diff",
+        "--cached",
+        "--no-ext-diff",
+        "--binary",
+    ).stdout
+
+    digest.update(
+        b"STAGED\0"
+    )
+    digest.update(
+        cached.encode(
+            "utf-8",
+            errors="surrogateescape",
+        )
+    )
+
+    untracked = git(
+        repo,
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "-z",
+    ).stdout.split("\0")
+
+    for rel in sorted(
+        value
+        for value in untracked
+        if value
+    ):
+        digest.update(
+            b"UNTRACKED\0"
+        )
+
+        digest.update(
+            rel.encode(
+                "utf-8",
+                errors="surrogateescape",
+            )
+        )
+
+        digest.update(b"\0")
+
+        file_path = repo / rel
+
+        if file_path.is_symlink():
+            digest.update(
+                b"SYMLINK\0"
+            )
+
+            digest.update(
+                os.readlink(
+                    file_path
+                ).encode(
+                    "utf-8",
+                    errors="surrogateescape",
+                )
+            )
+
+            continue
+
+        if not file_path.is_file():
+            digest.update(
+                b"NONFILE\0"
+            )
+            continue
+
+        digest.update(
+            b"FILE\0"
+        )
+
+        try:
+            with file_path.open(
+                "rb"
+            ) as handle:
+                while True:
+                    chunk = handle.read(
+                        1024 * 1024
+                    )
+
+                    if not chunk:
+                        break
+
+                    digest.update(
+                        chunk
+                    )
+
+        except OSError as exc:
+            raise AIVPError(
+                "Failed to fingerprint "
+                f"untracked file: {rel}"
+            ) from exc
+
+    return digest.hexdigest()
