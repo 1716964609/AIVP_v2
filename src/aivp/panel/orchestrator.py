@@ -82,15 +82,16 @@ from aivp.repository.git import (
     changed_paths,
     git,
     repo_lock,
+    worktree_fingerprint,
 )
 from aivp.risk.aggregate import normalize_risk
 from aivp.risk.base import RiskEngine
 from aivp.risk.engine import LegacyCompatibleRiskEngine
 from aivp.risk.routing import (
+    RiskRoutingDecision,
     aggregate_terminal_high,
     route_codex_risk,
 )
-from aivp.risk.rules import rule_based_risk
 from aivp.state.durable import (
     DurableExecution,
     begin_generation,
@@ -1321,6 +1322,18 @@ def execute_panel(
                     prompt,
                 )
 
+                repair_before = (
+                    worktree_fingerprint(
+                        repo
+                    )
+                )
+
+                paths_before_repair = (
+                    changed_paths(
+                        repo
+                    )
+                )
+
                 _invoke_edit(
                     adapter=generator,
                     runtime=runtime,
@@ -1331,6 +1344,78 @@ def execute_panel(
                     policy=policy,
                     durable=durable,
                 )
+
+                repair_after = (
+                    worktree_fingerprint(
+                        repo
+                    )
+                )
+
+                paths_after_repair = (
+                    changed_paths(
+                        repo
+                    )
+                )
+
+                if (
+                    repair_before
+                    == repair_after
+                ):
+                    no_op_evidence = {
+                        "schema_version": 1,
+                        "fix_iteration": (
+                            runtime.counters
+                            .fix_iterations
+                        ),
+                        "review_index": (
+                            review_index - 1
+                        ),
+                        "blocking_findings": (
+                            len(blockers)
+                        ),
+                        "before_fingerprint": (
+                            repair_before
+                        ),
+                        "after_fingerprint": (
+                            repair_after
+                        ),
+                        "changed_paths_before": (
+                            paths_before_repair
+                        ),
+                        "changed_paths_after": (
+                            paths_after_repair
+                        ),
+                        "repository_changed": False,
+                        "decision": (
+                            "HUMAN_REQUIRED"
+                        ),
+                        "reason": (
+                            "review repair produced "
+                            "no repository change"
+                        ),
+                    }
+
+                    _write_json(
+                        artifacts,
+                        (
+                            "no-op-review-repair-"
+                            f"{runtime.counters.fix_iterations}"
+                        ),
+                        run_dir
+                        / (
+                            "no-op-review-repair-"
+                            f"{runtime.counters.fix_iterations}"
+                            ".json"
+                        ),
+                        no_op_evidence,
+                    )
+
+                    escalation_reason = (
+                        "review repair produced "
+                        "no repository change"
+                    )
+
+                    break
 
             if escalation_reason is None:
                 final_diff = truncate_diff(
@@ -1364,31 +1449,75 @@ def execute_panel(
                         "final Claude review missing"
                     )
 
-                rule_risk = rule_based_risk(
-                    config,
-                    paths,
-                    final_diff,
+                verification_passed = bool(
+                    verification
+                    and verification.get(
+                        "passed"
+                    )
+                    is True
                 )
 
-                _write_json(
-                    artifacts,
-                    "rule-risk",
-                    run_dir
-                    / "rule-risk.json",
-                    rule_risk,
+                deterministic_assess = getattr(
+                    risk_engine,
+                    "deterministic",
+                    None,
                 )
 
-                routing = route_codex_risk(
-                    rule_risk=rule_risk,
-                    claude_review=review,
-                    verification_passed=bool(
-                        verification
-                        and verification.get(
-                            "passed"
+                if callable(
+                    deterministic_assess
+                ):
+                    rule_risk = (
+                        deterministic_assess(
+                            config=config,
+                            paths=paths,
+                            diff_text=final_diff,
                         )
-                        is True
-                    ),
-                )
+                    )
+
+                    routing = route_codex_risk(
+                        rule_risk=rule_risk,
+                        claude_review=review,
+                        verification_passed=(
+                            verification_passed
+                        ),
+                    )
+                else:
+                    rule_risk = None
+
+                    routing = (
+                        RiskRoutingDecision(
+                            invoke_codex_risk=True,
+                            mode=(
+                                "engine_contract_"
+                                "preserved"
+                            ),
+                            reason=(
+                                "RiskEngine does not "
+                                "expose deterministic "
+                                "pre-routing assessment; "
+                                "Codex risk is retained."
+                            ),
+                            deterministic_risk=(
+                                "unavailable"
+                            ),
+                            claude_risk=(
+                                normalize_risk(
+                                    review.get(
+                                        "risk"
+                                    )
+                                )
+                            ),
+                            claude_confidence=None,
+                            blocking_findings=len(
+                                blocking_findings(
+                                    review
+                                )
+                            ),
+                            verification_passed=(
+                                verification_passed
+                            ),
+                        )
+                    )
 
                 _write_json(
                     artifacts,
@@ -1424,16 +1553,37 @@ def execute_panel(
                         "rule"
                     ]
 
-                    if assessed_rule != rule_risk:
+                    if (
+                        rule_risk is not None
+                        and normalize_risk(
+                            assessed_rule.get(
+                                "risk"
+                            )
+                        )
+                        != normalize_risk(
+                            rule_risk.get(
+                                "risk"
+                            )
+                        )
+                    ):
                         raise AIVPError(
-                            "Risk rule changed between "
+                            "Risk level changed between "
                             "routing and aggregation"
                         )
+
+                    rule_risk = assessed_rule
 
                     aggregate = assessed[
                         "aggregate"
                     ]
                 else:
+                    if rule_risk is None:
+                        raise AIVPError(
+                            "Terminal risk routing "
+                            "requires deterministic "
+                            "risk evidence"
+                        )
+
                     codex_risk = None
 
                     aggregate = (
@@ -1442,6 +1592,14 @@ def execute_panel(
                             claude_review=review,
                         )
                     )
+
+                _write_json(
+                    artifacts,
+                    "rule-risk",
+                    run_dir
+                    / "rule-risk.json",
+                    rule_risk,
+                )
 
                 _write_json(
                     artifacts,

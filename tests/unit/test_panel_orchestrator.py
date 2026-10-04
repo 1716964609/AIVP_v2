@@ -95,6 +95,27 @@ class EditingFakeModel(FakeModel):
         )
 
 
+
+class FixingFakeModel(FakeModel):
+    def invoke(
+        self,
+        request: ModelRequest,
+    ) -> ModelResult:
+        if request.role == "fixer":
+            (
+                request.repo
+                / "repair.txt"
+            ).write_text(
+                "repaired\n",
+                encoding="utf-8",
+            )
+
+        return super().invoke(
+            request
+        )
+
+
+
 class FakeVerifier:
     def __init__(
         self,
@@ -625,6 +646,387 @@ class HarnessPanelTests(
                 [
                     "generator",
                     "fixer",
+                ],
+            )
+
+
+    def test_no_op_review_repair_exits_human_required(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+            runtime = self.make_runtime(root)
+
+            review_high = json.dumps(
+                {
+                    "summary": "blocking",
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "message": "must fix",
+                        }
+                    ],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "blocking"
+                    ],
+                }
+            )
+
+            generator = FakeModel(
+                runtime,
+                "codex",
+                [
+                    "generated",
+                    "fix attempted",
+                ],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [
+                    review_high,
+                ],
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [],
+            )
+
+            verifier = FakeVerifier(
+                [
+                    passed(),
+                ]
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk,
+                verifier=verifier,
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertEqual(
+                status["reason"],
+                (
+                    "review repair produced "
+                    "no repository change"
+                ),
+            )
+
+            self.assertEqual(
+                len(reviewer.requests),
+                1,
+            )
+
+            self.assertEqual(
+                verifier.calls,
+                1,
+            )
+
+            self.assertEqual(
+                [
+                    request.role
+                    for request
+                    in generator.requests
+                ],
+                [
+                    "generator",
+                    "fixer",
+                ],
+            )
+
+            self.assertEqual(
+                risk.requests,
+                [],
+            )
+
+            evidence_path = (
+                run_dir
+                / "no-op-review-repair-1.json"
+            )
+
+            self.assertTrue(
+                evidence_path.exists()
+            )
+
+            evidence = json.loads(
+                evidence_path.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                evidence[
+                    "repository_changed"
+                ]
+            )
+
+            self.assertEqual(
+                evidence[
+                    "before_fingerprint"
+                ],
+                evidence[
+                    "after_fingerprint"
+                ],
+            )
+
+    def test_changed_review_repair_preserves_rereview(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+            runtime = self.make_runtime(root)
+
+            review_high = json.dumps(
+                {
+                    "summary": "blocking",
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "message": "must fix",
+                        }
+                    ],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "blocking"
+                    ],
+                }
+            )
+
+            generator = FixingFakeModel(
+                runtime,
+                "codex",
+                [
+                    "generated",
+                    "fixed",
+                ],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [
+                    review_high,
+                    REVIEW_LOW,
+                ],
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [
+                    RISK_LOW,
+                ],
+            )
+
+            verifier = FakeVerifier(
+                [
+                    passed(),
+                    passed(),
+                ]
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk,
+                verifier=verifier,
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "AUTO_FINISHED",
+            )
+
+            self.assertEqual(
+                len(reviewer.requests),
+                2,
+            )
+
+            self.assertEqual(
+                verifier.calls,
+                2,
+            )
+
+            self.assertEqual(
+                len(risk.requests),
+                1,
+            )
+
+            self.assertTrue(
+                (
+                    repo / "repair.txt"
+                ).exists()
+            )
+
+            self.assertFalse(
+                (
+                    run_dir
+                    / "no-op-review-repair-1.json"
+                ).exists()
+            )
+
+
+    def test_custom_risk_engine_preserves_independent_judge(
+        self,
+    ):
+        class CustomRiskEngine:
+            def assess(
+                self,
+                **kwargs,
+            ):
+                return {
+                    "rule": {
+                        "risk": "low",
+                        "reasons": [
+                            "custom engine"
+                        ],
+                    },
+                    "aggregate": {
+                        "final": "high",
+                        "sources": {
+                            "rule": "low",
+                            "codex": "low",
+                            "claude": "high",
+                        },
+                        "large_disagreement": True,
+                        "human_required": True,
+                    },
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+            runtime = self.make_runtime(root)
+
+            review_high = json.dumps(
+                {
+                    "summary": "high",
+                    "findings": [],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "high"
+                    ],
+                }
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [
+                    RISK_LOW,
+                ],
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=FakeModel(
+                    runtime,
+                    "codex",
+                    ["generated"],
+                ),
+                reviewer=FakeModel(
+                    runtime,
+                    "claude",
+                    [review_high],
+                ),
+                risk_judge=risk,
+                verifier=FakeVerifier(
+                    [passed()]
+                ),
+                risk_engine=CustomRiskEngine(),
+                artifacts=ArtifactRegistry(),
+            )
+
+            self.assertEqual(
+                len(risk.requests),
+                1,
+            )
+
+            routing = json.loads(
+                (
+                    run_dir
+                    / "risk-routing.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertTrue(
+                routing[
+                    "invoke_codex_risk"
+                ]
+            )
+
+            self.assertEqual(
+                routing["mode"],
+                "engine_contract_preserved",
+            )
+
+            rule = json.loads(
+                (
+                    run_dir
+                    / "rule-risk.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                rule["reasons"],
+                [
+                    "custom engine"
                 ],
             )
 
