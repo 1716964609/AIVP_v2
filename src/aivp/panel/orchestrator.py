@@ -53,6 +53,7 @@ from aivp.models.codex import codex_risk_schema
 from aivp.models.codex_adapter import CodexAdapter
 from aivp.models.parsing import extract_json_object
 from aivp.panel.budget_routing import (
+    route_deterministic_repair_budget,
     route_review_repair_budget,
 )
 from aivp.panel.config import (
@@ -1219,6 +1220,63 @@ def execute_panel(
                                 "did not pass within "
                                 "fix budget"
                             )
+
+                        break
+
+                    next_fix_iteration = (
+                        runtime.counters
+                        .fix_iterations
+                        + 1
+                    )
+
+                    budget_decision = (
+                        route_deterministic_repair_budget(
+                            codex_calls=(
+                                runtime.counters
+                                .codex_calls
+                            ),
+                            claude_calls=(
+                                runtime.counters
+                                .claude_calls
+                            ),
+                            codex_max_calls=(
+                                runtime.budgets
+                                .codex_max_calls
+                            ),
+                            claude_max_calls=(
+                                runtime.budgets
+                                .claude_max_calls
+                            ),
+                        )
+                    )
+
+                    _write_json(
+                        artifacts,
+                        (
+                            "deterministic-repair-budget-"
+                            f"{next_fix_iteration}"
+                        ),
+                        run_dir
+                        / (
+                            "deterministic-repair-budget-"
+                            f"{next_fix_iteration}"
+                            ".json"
+                        ),
+                        asdict(
+                            budget_decision
+                        ),
+                    )
+
+                    if not (
+                        budget_decision
+                        .allow_repair
+                    ):
+                        escalation_reason = (
+                            "deterministic repair skipped "
+                            "to preserve downstream "
+                            "model-call budget: "
+                            + budget_decision.reason
+                        )
 
                         break
 

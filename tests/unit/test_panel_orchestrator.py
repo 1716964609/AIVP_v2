@@ -569,6 +569,141 @@ class HarnessPanelTests(
                 "AUTO_FINISHED",
             )
 
+
+    def test_deterministic_repair_preserves_downstream_budget(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            runtime = Runtime(
+                root / "run",
+                Budgets(
+                    codex_max_calls=2,
+                    claude_max_calls=3,
+                    max_fix_iterations=2,
+                ),
+            )
+
+            runtime.run_dir.mkdir()
+
+            generator = FakeModel(
+                runtime,
+                "codex",
+                [
+                    "generated",
+                ],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [],
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [],
+            )
+
+            verifier = FakeVerifier(
+                [
+                    failed(),
+                ]
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk,
+                verifier=verifier,
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertIn(
+                "deterministic repair skipped",
+                status["reason"],
+            )
+
+            self.assertEqual(
+                [
+                    request.role
+                    for request
+                    in generator.requests
+                ],
+                [
+                    "generator",
+                ],
+            )
+
+            self.assertEqual(
+                reviewer.requests,
+                [],
+            )
+
+            self.assertEqual(
+                risk.requests,
+                [],
+            )
+
+            self.assertEqual(
+                verifier.calls,
+                1,
+            )
+
+            evidence = json.loads(
+                (
+                    run_dir
+                    / (
+                        "deterministic-repair-budget-"
+                        "1.json"
+                    )
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                evidence["allow_repair"]
+            )
+
+            self.assertEqual(
+                evidence[
+                    "codex_remaining"
+                ],
+                1,
+            )
+
+            self.assertEqual(
+                evidence[
+                    "codex_required"
+                ],
+                2,
+            )
+
     def test_deterministic_failure_repairs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

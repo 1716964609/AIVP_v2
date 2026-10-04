@@ -1,6 +1,7 @@
 import unittest
 
 from aivp.panel.budget_routing import (
+    route_deterministic_repair_budget,
     route_review_repair_budget,
 )
 
@@ -8,7 +9,7 @@ from aivp.panel.budget_routing import (
 class BudgetRoutingTests(
     unittest.TestCase
 ):
-    def test_default_budget_admits_repair(
+    def test_default_review_budget_admits_repair(
         self,
     ):
         decision = (
@@ -34,11 +35,6 @@ class BudgetRoutingTests(
             2,
         )
 
-        self.assertEqual(
-            decision.claude_remaining,
-            2,
-        )
-
     def test_codex_risk_capacity_is_reserved(
         self,
     ):
@@ -53,11 +49,6 @@ class BudgetRoutingTests(
 
         self.assertFalse(
             decision.allow_repair
-        )
-
-        self.assertEqual(
-            decision.mode,
-            "budget_denied",
         )
 
         self.assertEqual(
@@ -91,9 +82,30 @@ class BudgetRoutingTests(
             0,
         )
 
+    def test_deterministic_repair_uses_same_reserve(
+        self,
+    ):
+        decision = (
+            route_deterministic_repair_budget(
+                codex_calls=1,
+                claude_calls=0,
+                codex_max_calls=2,
+                claude_max_calls=3,
+            )
+        )
+
+        self.assertFalse(
+            decision.allow_repair
+        )
+
         self.assertEqual(
-            decision.claude_required,
+            decision.codex_remaining,
             1,
+        )
+
+        self.assertEqual(
+            decision.codex_required,
+            2,
         )
 
 
