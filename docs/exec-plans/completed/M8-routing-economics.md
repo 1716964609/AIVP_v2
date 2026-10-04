@@ -1,6 +1,6 @@
 # M8 — Risk-based Routing / Economics
 
-Status: ACTIVE / BASELINE INSPECTION
+Status: COMPLETE / STRONGLY PROVEN
 
 ## 目的
 
@@ -57,7 +57,7 @@ M8の結果を良く見せるためにM7期待値を書き換えてはならな�
 
 ## M8-0 — 現在のControl Flow調査
 
-Status: ACTIVE
+Status: COMPLETE / OBSERVED
 
 確認するもの:
 
@@ -173,7 +173,7 @@ Source of Truthを曖昧にすることを避けるためである。
 
 ## M8-5 — 再Benchmark
 
-Status: NOT STARTED
+Status: COMPLETE / PROVEN
 
 M7と同じ固定Eval SuiteをM8で再実行する。
 
@@ -225,30 +225,30 @@ M8では以下を行わない。
 - [x] model / call budget routing
 - [x] early exit
 - [x] routing evidence persistence
-- [ ] M7 fixed suite 15 / 15 PASS
-- [ ] full regression PASS
+- [x] M7 fixed suite 15 / 15 PASS
+- [x] full regression PASS
 
 ### Economics
 
-- [ ] total model calls Before / After
-- [ ] role別Model Call Before / After
-- [ ] Token Before / After
-- [ ] p50 / p95 latency Before / After
-- [ ] Cost per Accepted Change比較
-- [ ] unavailableなCostを0として扱わない
+- [x] total model calls Before / After
+- [x] role別Model Call Before / After
+- [x] Token Before / After
+- [x] p50 / p95 latency Before / After
+- [x] Cost per Accepted Change status recorded as UNAVAILABLE because live-provider USD cost coverage is unavailable
+- [x] unavailableなCostを0として扱わない
 
 ### Repository Memory
 
-- [ ] docs/evidence/m8-routing-economics.md
-- [ ] machine-readable M8 comparison evidence
-- [ ] docs/milestones/M8.md
+- [x] docs/evidence/m8-routing-economics.md
+- [x] machine-readable M8 comparison evidence
+- [x] docs/milestones/M8.md
 - [ ] docs/CAPABILITY_LEDGER.json
 - [ ] docs/PROJECT_STATE.json
-- [ ] execution planをcompletedへ移動
+- [x] execution planをcompletedへ移動
 
 ### Git Closure
 
-- [ ] git diff --check PASS
+- [x] git diff --check PASS
 - [ ] completion commit
 - [ ] completion tag
 - [ ] clean working tree
@@ -290,3 +290,53 @@ if deterministic rule risk or Claude review risk is already HIGH, the existing
 aggregate contract is forced to HIGH regardless of Codex output.
 
 This negative result is preserved as M8 design evidence.
+
+
+## M8 Closure Evidence
+
+Formal Before:
+
+`m7-final-clean-20261004-072204`
+
+Formal After:
+
+`m8-final-routing-20261004-120728`
+
+Candidate SHA:
+
+`99995181a2c1b235e2ce1299ed49543bb3857e22`
+
+Measured:
+
+- fixed quality: 15 / 15 PASS -> 15 / 15 PASS
+- Codex calls: 47 -> 47
+- Claude calls: 31 -> 25 (-19.35%)
+- total model calls: 78 -> 72 (-7.69%)
+- fix iterations: 7 -> 7
+- AUTO_FINISHED: 14 -> 14
+- HUMAN_REQUIRED: 13 -> 13
+- suite wall-clock: 1122.694 s -> 1036.739 s (-7.66%)
+- no-op review-repair early exits: 6
+
+The six no-op review-repair artifacts match the six observed Claude-call
+reduction while quality and terminal outcomes remain unchanged.
+
+M8-1's safe terminal-HIGH risk routing produced no measured Codex-call
+reduction in this formal corpus.
+
+Live-provider USD cost coverage remains unavailable. Dollar Cost per
+Accepted Change is not inferred and missing cost is not treated as zero.
+
+Regression evidence at candidate SHA:
+
+- 349 unit tests PASS
+- 11 integration tests PASS
+
+Tracked closure evidence:
+
+- `docs/evidence/m8-routing-economics.md`
+- `docs/evidence/m8-routing-economics-summary.json`
+- `docs/milestones/M8.md`
+
+Repository continuity fields and the exact completion commit SHA are
+recorded after creation of the completion commit/tag.

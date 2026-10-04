@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "milestone": "M8",
+  "title": "Risk-based Routing / Economics",
+  "candidate_sha": "99995181a2c1b235e2ce1299ed49543bb3857e22",
+  "comparison_boundary": {
+    "suite": "evals/suites/m7-fixed.json",
+    "fixed_cases": 15,
+    "trials": 27,
+    "m7_before_run": "m7-final-clean-20261004-072204",
+    "m8_after_run": "m8-final-routing-20261004-120728"
+  },
+  "quality": {
+    "m7": {
+      "pass": 15,
+      "fail": 0,
+      "error": 0
+    },
+    "m8": {
+      "pass": 15,
+      "fail": 0,
+      "error": 0
+    },
+    "preserved": true
+  },
+  "terminal_outcomes": {
+    "m7": {
+      "AUTO_FINISHED": 14,
+      "HUMAN_REQUIRED": 13
+    },
+    "m8": {
+      "AUTO_FINISHED": 14,
+      "HUMAN_REQUIRED": 13
+    },
+    "preserved": true
+  },
+  "model_calls": {
+    "m7": {
+      "codex": 47,
+      "claude": 31,
+      "total": 78
+    },
+    "m8": {
+      "codex": 47,
+      "claude": 25,
+      "total": 72
+    },
+    "delta": {
+      "claude_calls": {
+        "absolute": -6,
+        "percent": -19.35483870967742
+      },
+      "codex_calls": {
+        "absolute": 0,
+        "percent": 0.0
+      },
+      "total_model_calls": {
+        "absolute": -6,
+        "percent": -7.6923076923076925
+      },
+      "wall_clock_seconds": {
+        "absolute": -85.95418400000017,
+        "percent": -7.656067298228441
+      }
+    }
+  },
+  "repair_iterations": {
+    "m7": 7,
+    "m8": 7
+  },
+  "suite_wall_clock_seconds": {
+    "m7": 1122.693684,
+    "m8": 1036.7395,
+    "absolute_delta": -85.95418400000017,
+    "percent_delta": -7.656067298228441
+  },
+  "trial_latency_distribution_seconds": {
+    "m7": {
+      "available_count": 27,
+      "missing_count": 0,
+      "sum": 1121.801,
+      "mean": 41.54818518518518,
+      "p50": 49.553,
+      "p95": 111.51539999999999
+    },
+    "m8": {
+      "available_count": 27,
+      "missing_count": 0,
+      "sum": 1035.868,
+      "mean": 38.36548148148148,
+      "p50": 54.208,
+      "p95": 82.32629999999999
+    },
+    "note": "Per-trial benchmark distribution; suite wall-clock is reported separately."
+  },
+  "tokens": {
+    "m7": {
+      "input_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 2253529.0,
+        "mean": 86674.19230769231,
+        "p50": 117959.0,
+        "p95": 240229.5
+      },
+      "cached_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 2435735.0,
+        "mean": 93682.11538461539,
+        "p50": 98809.0,
+        "p95": 247832.5
+      },
+      "output_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 34262.0,
+        "mean": 1317.7692307692307,
+        "p50": 1205.0,
+        "p95": 3329.0
+      }
+    },
+    "m8": {
+      "input_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 2327369.0,
+        "mean": 89514.19230769231,
+        "p50": 117959.5,
+        "p95": 224208.5
+      },
+      "cached_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 2148680.0,
+        "mean": 82641.53846153847,
+        "p50": 96578.0,
+        "p95": 220013.0
+      },
+      "output_tokens": {
+        "available_count": 26,
+        "missing_count": 1,
+        "sum": 27412.0,
+        "mean": 1054.3076923076924,
+        "p50": 1232.0,
+        "p95": 2123.5
+      }
+    },
+    "note": "Observed benchmark token telemetry is reported as measured; no causal token-saving claim is inferred solely from one paired run."
+  },
+  "routing_artifacts": {
+    "no_op_review_repair": 6,
+    "review_repair_budget": 6,
+    "deterministic_repair_budget": 1,
+    "risk_routing": 14,
+    "aggregate_risk": 14
+  },
+  "regression_before_formal_benchmark": {
+    "unit_tests_pass": 349,
+    "integration_tests_pass": 11,
+    "candidate_sha": "99995181a2c1b235e2ce1299ed49543bb3857e22"
+  },
+  "economics": {
+    "live_provider_usd_cost": "UNAVAILABLE",
+    "cost_per_accepted_change_usd": "UNAVAILABLE",
+    "rule": "Missing live-provider USD cost evidence must not be interpreted as zero."
+  },
+  "interpretation": {
+    "observed_call_reduction_source": "Six no-op review-repair early exits coincide exactly with six fewer Claude review calls while Codex calls, repair iterations, quality, and terminal outcome counts remain unchanged.",
+    "m8_1_formal_corpus_effect": "Codex calls remained 47 -> 47; the safe terminal-HIGH risk-judge skip mechanism had no measured call reduction in this corpus.",
+    "wall_clock_claim": "Observed suite wall-clock improved by 7.66 percent in this paired formal run; a single paired run is not sufficient to claim a general latency effect."
+  }
+}
