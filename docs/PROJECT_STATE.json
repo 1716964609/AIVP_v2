@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m8-baseline-inspection-start",
+  "state_updated_for": "m8-completion",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -9,12 +9,12 @@
     "historical": "docs/milestones, docs/decisions, and archived historical material"
   },
   "current": {
-    "milestone": "M8",
-    "name": "Risk-based Routing / Economics",
-    "phase": "m8-baseline-inspection",
-    "branch": "m8-risk-routing-economics",
-    "base_tag": "m7-eval-harness-complete",
-    "active_plan": "docs/exec-plans/active/M8-routing-economics.md"
+    "milestone": "M9",
+    "name": "Hardening / Garbage Collection",
+    "phase": "not-started",
+    "branch": null,
+    "base_tag": "m8-risk-routing-economics-complete",
+    "active_plan": null
   },
   "completed_milestones": {
     "M0": {
@@ -48,6 +48,10 @@
     "M7": {
       "commit": "ec499e0a601023a5187d474e7b596662ff89abee",
       "tag": "m7-eval-harness-complete"
+    },
+    "M8": {
+      "commit": "23404dc937d84b16a68704f00161f89a7179fe27",
+      "tag": "m8-risk-routing-economics-complete"
     }
   },
   "m7_exit_gate": [
@@ -78,7 +82,10 @@
     "state_database": ".aivp/state.db",
     "m7_eval_exit": "docs/evidence/m7-eval.md",
     "m7_eval_summary": "docs/evidence/m7-eval-summary.json",
-    "m7_milestone": "docs/milestones/M7.md"
+    "m7_milestone": "docs/milestones/M7.md",
+    "m8_routing_economics": "docs/evidence/m8-routing-economics.md",
+    "m8_routing_economics_summary": "docs/evidence/m8-routing-economics-summary.json",
+    "m8_milestone": "docs/milestones/M8.md"
   },
   "pending_historical_verification": [
     "M0 benchmark script exact path",
@@ -86,10 +93,10 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Inspect the current Harness Panel control flow, reviewer invocation, risk evaluation, model-call budgets, terminal transitions, and M7 Before metrics before changing routing behavior.",
+  "next_action": "Start M9 — Hardening / Garbage Collection from the M8 completion tag. Create and inspect the M9 execution plan before changing behavior.",
   "repository_memory": {
-    "implementation_base_commit": "ec499e0a601023a5187d474e7b596662ff89abee",
-    "implementation_base_tag": "m7-eval-harness-complete",
+    "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
+    "implementation_base_tag": "m8-risk-routing-economics-complete",
     "repository_memory_bootstrap_commit": "4e503f1",
     "rule": "Do not persist a dynamic current HEAD here. Read live HEAD and working-tree state from Git at session bootstrap."
   },
@@ -127,5 +134,65 @@
     "integration_tests_pass": 11,
     "git_diff_check": "PASS",
     "live_provider_usd_cost": "UNAVAILABLE"
+  },
+  "m8_exit_gate": [
+    "reduce unnecessary model calls while preserving frozen Eval Quality",
+    "compare Cost per Accepted Change where provider cost evidence permits"
+  ],
+  "m8_required_build": [
+    "deterministic risk floor",
+    "review routing",
+    "model / call budget routing",
+    "early exit"
+  ],
+  "m8_implementation_status": {
+    "deterministic_risk_floor": "complete",
+    "review_routing": "complete",
+    "model_call_budget_routing": "complete",
+    "early_exit": "complete",
+    "routing_evidence": "complete",
+    "formal_rebenchmark": "complete"
+  },
+  "m8_completion": {
+    "completion_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
+    "completion_tag": "m8-risk-routing-economics-complete",
+    "candidate_sha": "99995181a2c1b235e2ce1299ed49543bb3857e22",
+    "before_formal_run": "m7-final-clean-20261004-072204",
+    "after_formal_run": "m8-final-routing-20261004-120728",
+    "fixed_cases": 15,
+    "case_pass": 15,
+    "case_fail": 0,
+    "case_error": 0,
+    "trials": 27,
+    "m7_codex_calls": 47,
+    "m8_codex_calls": 47,
+    "m7_claude_calls": 31,
+    "m8_claude_calls": 25,
+    "claude_call_delta": -6,
+    "claude_call_delta_percent": -19.35,
+    "m7_total_model_calls": 78,
+    "m8_total_model_calls": 72,
+    "total_model_call_delta": -6,
+    "total_model_call_delta_percent": -7.69,
+    "m7_fix_iterations": 7,
+    "m8_fix_iterations": 7,
+    "m7_auto_finished": 14,
+    "m8_auto_finished": 14,
+    "m7_human_required": 13,
+    "m8_human_required": 13,
+    "m7_suite_wall_clock_seconds": 1122.694,
+    "m8_suite_wall_clock_seconds": 1036.739,
+    "suite_wall_clock_delta_seconds": -85.955,
+    "suite_wall_clock_delta_percent": -7.66,
+    "no_op_review_repair_artifacts": 6,
+    "review_repair_budget_artifacts": 6,
+    "deterministic_repair_budget_artifacts": 1,
+    "risk_routing_artifacts": 14,
+    "aggregate_risk_artifacts": 14,
+    "unit_tests_pass": 349,
+    "integration_tests_pass": 11,
+    "git_diff_check": "PASS",
+    "live_provider_usd_cost": "UNAVAILABLE",
+    "cost_per_accepted_change_usd": "UNAVAILABLE"
   }
 }

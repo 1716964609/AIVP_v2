@@ -405,7 +405,32 @@
     {
       "name": "risk_based_routing_and_economics",
       "planned_milestone": "M8",
-      "status": "not_started"
+      "status": "proven",
+      "completion": {
+        "commit": "23404dc937d84b16a68704f00161f89a7179fe27",
+        "tag": "m8-risk-routing-economics-complete"
+      },
+      "evidence": [
+        "docs/evidence/m8-routing-economics.md",
+        "docs/evidence/m8-routing-economics-summary.json",
+        "docs/milestones/M8.md",
+        "frozen 15-case / 27-trial suite remained 15 of 15 PASS",
+        "Codex calls remained 47 -> 47",
+        "Claude calls reduced 31 -> 25 (-19.35%)",
+        "total model calls reduced 78 -> 72 (-7.69%)",
+        "terminal outcomes preserved at 14 AUTO_FINISHED / 13 HUMAN_REQUIRED",
+        "six no-op review-repair artifacts match six fewer Claude review calls",
+        "suite wall-clock observed 1122.694 s -> 1036.739 s (-7.66%)",
+        "349 unit tests PASS",
+        "11 integration tests PASS"
+      ],
+      "limitations": [
+        "Provider/model behavior remains nondeterministic.",
+        "The formal comparison is one paired M7/M8 suite run.",
+        "Live-provider USD cost coverage is unavailable.",
+        "Dollar Cost per Accepted Change is therefore unavailable.",
+        "M8-1 safe terminal-HIGH routing produced no measured Codex-call reduction in the formal corpus."
+      ]
     }
   ]
 }

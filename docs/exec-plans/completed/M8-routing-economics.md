@@ -242,16 +242,16 @@ M8では以下を行わない。
 - [x] docs/evidence/m8-routing-economics.md
 - [x] machine-readable M8 comparison evidence
 - [x] docs/milestones/M8.md
-- [ ] docs/CAPABILITY_LEDGER.json
-- [ ] docs/PROJECT_STATE.json
+- [x] docs/CAPABILITY_LEDGER.json
+- [x] docs/PROJECT_STATE.json
 - [x] execution planをcompletedへ移動
 
 ### Git Closure
 
 - [x] git diff --check PASS
-- [ ] completion commit
-- [ ] completion tag
-- [ ] clean working tree
+- [x] completion commit
+- [x] completion tag
+- [x] clean working tree
 
 
 ## M8-1 Discovery — Conservative LOW Skip Rejected
@@ -338,5 +338,12 @@ Tracked closure evidence:
 - `docs/evidence/m8-routing-economics-summary.json`
 - `docs/milestones/M8.md`
 
-Repository continuity fields and the exact completion commit SHA are
-recorded after creation of the completion commit/tag.
+Completion evidence commit:
+
+`23404dc937d84b16a68704f00161f89a7179fe27`
+
+Completion tag:
+
+`m8-risk-routing-economics-complete`
+
+Repository continuity is recorded in the post-tag continuity commit.
