@@ -75,7 +75,7 @@ Status: ACTIVE
 
 ## M8-1 — Deterministic Risk Floor
 
-Status: NOT STARTED
+Status: IMPLEMENTED / TESTED
 
 LLM判断より前に確定できる安全境界をDeterministicに定義する。
 
@@ -93,7 +93,7 @@ Deterministicな安全境界をLLMが弱めてはならない。
 
 ## M8-2 — Review Routing
 
-Status: NOT STARTED
+Status: IMPLEMENTED / TESTED
 
 Independent Reviewerを、
 
@@ -110,7 +110,7 @@ Reviewをskipした場合も、
 
 ## M8-3 — Model / Call Budget Routing
 
-Status: NOT STARTED
+Status: IMPLEMENTED / TESTED
 
 Generator / Fixer / Reviewer / Risk Judgeごとに
 Call Budgetを明示的に管理する。
@@ -122,7 +122,7 @@ Budget exhaustionは引き続きfail-safeに扱う。
 
 ## M8-4 — Early Exit
 
-Status: NOT STARTED
+Status: IMPLEMENTED / TESTED
 
 Deterministic evidenceだけで安全なTerminal Pathが確定した場合、
 後続処理を停止する。
@@ -135,6 +135,41 @@ Deterministic evidenceだけで安全なTerminal Pathが確定した場合、
 - unrecoverable deterministic verification failure
 
 正確なRuleはM8-0で現在のControl Flowを確認してから決める。
+
+### M8-4 As-Built Decision
+
+M8-4では新しいEarly Exitアルゴリズムを追加しない。
+
+M8-1〜M8-3および既存Capability Policyを棚卸しした結果、
+計画時に想定していたTerminal Pathは既に以下の形で成立している。
+
+- Capability PolicyのHUMAN_REQUIRED / DENIEDは例外処理から
+  terminal outcomeへ直接遷移し、後続処理を行わない。
+- deterministic verificationがfix budget内で回復しない場合は
+  HUMAN_REQUIREDへescalateし、Review / Risk処理へ進まない。
+- deterministic repair / review repairのAdmissionが拒否された場合は
+  Fixerを呼ばずHUMAN_REQUIREDへescalateする。
+- review repair後のworktree fingerprintが不変の場合は
+  再Verification / 再Reviewを行わずHUMAN_REQUIREDへescalateする。
+- aggregate outcomeが既にHIGHへ固定される場合は
+  redundantなCodex Risk Judgeを呼ばない。
+
+Evidenceは新しい重複Artifactへ統合せず、
+既存の構造化ArtifactをSource of Truthとして維持する。
+
+- deterministic-repair-budget-*.json
+- review-repair-budget-*.json
+- no-op-review-repair-*.json
+- risk-routing.json
+- aggregate-risk.json
+- status.json
+
+`status.json`をterminal outcomeのSource of Truth、
+各routing Artifactをdecision provenanceのSource of Truthとする。
+
+M8-4で新たな`early-exit.json`を追加しない理由は、
+同じdecisionを複数Artifactへ重複記録して
+Source of Truthを曖昧にすることを避けるためである。
 
 ## M8-5 — 再Benchmark
 
@@ -185,11 +220,11 @@ M8では以下を行わない。
 
 ### Technical
 
-- [ ] deterministic risk floor
-- [ ] review routing
-- [ ] model / call budget routing
-- [ ] early exit
-- [ ] routing evidence persistence
+- [x] deterministic risk floor
+- [x] review routing
+- [x] model / call budget routing
+- [x] early exit
+- [x] routing evidence persistence
 - [ ] M7 fixed suite 15 / 15 PASS
 - [ ] full regression PASS
 
