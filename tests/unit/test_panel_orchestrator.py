@@ -1030,6 +1030,278 @@ class HarnessPanelTests(
                 ],
             )
 
+
+    def test_review_repair_preserves_codex_risk_budget(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            runtime = Runtime(
+                root / "run",
+                Budgets(
+                    codex_max_calls=2,
+                    claude_max_calls=3,
+                    max_fix_iterations=2,
+                ),
+            )
+
+            runtime.run_dir.mkdir()
+
+            review_high = json.dumps(
+                {
+                    "summary": "blocking",
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "message": "must fix",
+                        }
+                    ],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "blocking"
+                    ],
+                }
+            )
+
+            generator = FakeModel(
+                runtime,
+                "codex",
+                [
+                    "generated",
+                ],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [
+                    review_high,
+                ],
+            )
+
+            risk = FakeModel(
+                runtime,
+                "codex",
+                [],
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=risk,
+                verifier=FakeVerifier(
+                    [passed()]
+                ),
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertEqual(
+                [
+                    request.role
+                    for request
+                    in generator.requests
+                ],
+                [
+                    "generator",
+                ],
+            )
+
+            self.assertEqual(
+                len(reviewer.requests),
+                1,
+            )
+
+            self.assertEqual(
+                risk.requests,
+                [],
+            )
+
+            evidence = json.loads(
+                (
+                    run_dir
+                    / (
+                        "review-repair-budget-"
+                        "1.json"
+                    )
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                evidence["allow_repair"]
+            )
+
+            self.assertEqual(
+                evidence[
+                    "codex_remaining"
+                ],
+                1,
+            )
+
+            self.assertEqual(
+                evidence[
+                    "codex_required"
+                ],
+                2,
+            )
+
+    def test_review_repair_requires_claude_rereview_budget(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.make_repo(root)
+
+            runtime = Runtime(
+                root / "run",
+                Budgets(
+                    codex_max_calls=4,
+                    claude_max_calls=1,
+                    max_fix_iterations=2,
+                ),
+            )
+
+            runtime.run_dir.mkdir()
+
+            review_high = json.dumps(
+                {
+                    "summary": "blocking",
+                    "findings": [
+                        {
+                            "severity": "major",
+                            "message": "must fix",
+                        }
+                    ],
+                    "risk": "high",
+                    "risk_confidence": 1.0,
+                    "risk_reasons": [
+                        "blocking"
+                    ],
+                }
+            )
+
+            generator = FakeModel(
+                runtime,
+                "codex",
+                [
+                    "generated",
+                ],
+            )
+
+            reviewer = FakeModel(
+                runtime,
+                "claude",
+                [
+                    review_high,
+                ],
+            )
+
+            run_dir = execute_panel(
+                runtime=runtime,
+                repo=repo,
+                task=self.task(),
+                config=self.config(),
+                generator=generator,
+                reviewer=reviewer,
+                risk_judge=FakeModel(
+                    runtime,
+                    "codex",
+                    [],
+                ),
+                verifier=FakeVerifier(
+                    [passed()]
+                ),
+                risk_engine=(
+                    LegacyCompatibleRiskEngine()
+                ),
+                artifacts=ArtifactRegistry(),
+            )
+
+            status = json.loads(
+                (
+                    run_dir
+                    / "status.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertEqual(
+                status["status"],
+                "HUMAN_REQUIRED",
+            )
+
+            self.assertEqual(
+                [
+                    request.role
+                    for request
+                    in generator.requests
+                ],
+                [
+                    "generator",
+                ],
+            )
+
+            self.assertEqual(
+                len(reviewer.requests),
+                1,
+            )
+
+            evidence = json.loads(
+                (
+                    run_dir
+                    / (
+                        "review-repair-budget-"
+                        "1.json"
+                    )
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+
+            self.assertFalse(
+                evidence["allow_repair"]
+            )
+
+            self.assertEqual(
+                evidence[
+                    "claude_remaining"
+                ],
+                0,
+            )
+
+            self.assertEqual(
+                evidence[
+                    "claude_required"
+                ],
+                1,
+            )
+
     def test_high_risk_requires_human(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
