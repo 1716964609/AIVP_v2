@@ -266,6 +266,14 @@ aivp --version
 aivp --help
 ```
 
+Unit TestはPython標準ライブラリの`unittest`で実行できます。
+
+```bash
+python -m unittest discover -s tests/unit -p 'test_*.py'
+```
+
+このTest Suiteの実行に`pytest`は必要ありません。
+
 Package metadataとCLI entry pointは、
 
 [`pyproject.toml`](pyproject.toml)
