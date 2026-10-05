@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 import datetime as dt
 import uuid
@@ -232,7 +233,62 @@ def _execute(
 
                     break
 
+        if durable is not None:
+            _finalize_durable_run(
+                store=durable.store,
+                run_id=durable.run_id,
+                run_dir=result,
+            )
+
         return result
+
+def _finalize_durable_run(
+    *,
+    store: SQLiteStateStore,
+    run_id: str,
+    run_dir: Path,
+) -> None:
+    status_path = (
+        run_dir / "status.json"
+    )
+
+    if not status_path.is_file():
+        raise AIVPError(
+            "Terminal run is missing status.json: "
+            f"{run_id}"
+        )
+
+    try:
+        payload = json.loads(
+            status_path.read_text(
+                encoding="utf-8"
+            )
+        )
+    except (
+        OSError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise AIVPError(
+            "Cannot read terminal status for run: "
+            f"{run_id}"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise AIVPError(
+            "Run status payload must be an object"
+        )
+
+    status = payload.get("status")
+
+    if not isinstance(status, str):
+        raise AIVPError(
+            "Run status is missing or invalid"
+        )
+
+    store.finalize_run(
+        run_id=run_id,
+        status=status,
+    )
 
 def run_new(
     *,

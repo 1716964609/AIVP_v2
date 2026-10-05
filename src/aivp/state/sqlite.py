@@ -127,6 +127,17 @@ def _now_iso() -> str:
     )
 
 
+TERMINAL_RUN_STATUSES = frozenset(
+    {
+        "AUTO_FINISHED",
+        "HUMAN_REQUIRED",
+        "DENIED",
+        "FAILED_TERMINAL",
+        "CANCELLED",
+    }
+)
+
+
 class SQLiteStateStore:
     def __init__(
         self,
@@ -512,6 +523,93 @@ class SQLiteStateStore:
 
             self.connection.commit()
 
+    def finalize_run(
+        self,
+        *,
+        run_id: str,
+        status: str,
+    ) -> None:
+        if status not in TERMINAL_RUN_STATUSES:
+            raise StateIntegrityError(
+                "Cannot finalize run with "
+                f"non-terminal status: {status}"
+            )
+
+        now = _now_iso()
+
+        with self.connection:
+            row = self.connection.execute(
+                """
+                SELECT
+                    status,
+                    current_state,
+                    finished_at
+                FROM runs
+                WHERE run_id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+            if row is None:
+                raise StateIntegrityError(
+                    "Cannot finalize missing run: "
+                    f"{run_id}"
+                )
+
+            existing_status = row["status"]
+            existing_state = row["current_state"]
+            existing_finished = row["finished_at"]
+
+            if existing_finished is not None:
+                if (
+                    existing_status != status
+                    or existing_state != status
+                ):
+                    raise StateIntegrityError(
+                        "Terminal run outcome "
+                        "cannot be changed"
+                    )
+
+                return
+
+            if (
+                existing_status in TERMINAL_RUN_STATUSES
+                and existing_status != status
+            ):
+                raise StateIntegrityError(
+                    "Terminal run status conflict"
+                )
+
+            if (
+                existing_state in TERMINAL_RUN_STATUSES
+                and existing_state != status
+            ):
+                raise StateIntegrityError(
+                    "Terminal run state conflict"
+                )
+
+            cursor = self.connection.execute(
+                """
+                UPDATE runs
+                SET status = ?,
+                    current_state = ?,
+                    finished_at = ?
+                WHERE run_id = ?
+                """,
+                (
+                    status,
+                    status,
+                    now,
+                    run_id,
+                ),
+            )
+
+            if cursor.rowcount != 1:
+                raise StateIntegrityError(
+                    "Failed to finalize run: "
+                    f"{run_id}"
+                )
+
     def close(self) -> None:
         self.connection.close()
 
@@ -621,6 +719,34 @@ class SQLiteStateStore:
         self,
         run_id: str,
     ) -> Optional[Dict[str, Any]]:
+        run_row = self.connection.execute(
+            """
+            SELECT
+                status,
+                current_state,
+                finished_at
+            FROM runs
+            WHERE run_id = ?
+            """,
+            (run_id,),
+        ).fetchone()
+
+        if run_row is not None:
+            run_status = run_row["status"]
+            current_state = run_row["current_state"]
+            finished_at = run_row["finished_at"]
+
+            if (
+                finished_at is not None
+                or run_status
+                in TERMINAL_RUN_STATUSES
+                or current_state
+                in TERMINAL_RUN_STATUSES
+            ):
+                raise StateIntegrityError(
+                    "Cannot resume terminal run: "
+                    f"{run_id}"
+                )
         row = self.connection.execute(
             """
             SELECT
