@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m9-artifact-retention-planner",
+  "state_updated_for": "m9-artifact-retention-executor",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -93,7 +93,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit M9-5D artifact retention classification/planning; then implement the bounded DB/filesystem retention executor using temporary state and fail-closed ownership rules.",
+  "next_action": "Review and commit M9-5E bounded artifact retention executor; then integrate worktree, Docker, cache, and artifact cleanup behind the dry-run-first aivp gc CLI.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",

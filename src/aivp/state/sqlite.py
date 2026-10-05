@@ -929,6 +929,73 @@ class SQLiteStateStore:
         return payload
 
 
+    def event_exists(
+        self,
+        *,
+        run_id: str,
+        event_type: str,
+    ) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT 1
+            FROM events
+            WHERE run_id = ?
+              AND event_type = ?
+            LIMIT 1
+            """,
+            (
+                run_id,
+                event_type,
+            ),
+        ).fetchone()
+
+        return row is not None
+
+    def record_event(
+        self,
+        *,
+        run_id: str,
+        event_type: str,
+        payload: Mapping[str, Any],
+        step_id: Optional[str] = None,
+    ) -> None:
+        if not run_id.strip():
+            raise ValueError(
+                "run_id must not be empty"
+            )
+
+        if not event_type.strip():
+            raise ValueError(
+                "event_type must not be empty"
+            )
+
+        payload_json = json.dumps(
+            dict(payload),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+        with self.connection:
+            self.connection.execute(
+                """
+                INSERT INTO events(
+                    run_id,
+                    step_id,
+                    ts,
+                    event_type,
+                    payload_json
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id,
+                    step_id,
+                    _now_iso(),
+                    event_type,
+                    payload_json,
+                ),
+            )
+
     def schema_version(self) -> int:
         return self.connection.execute(
             "PRAGMA user_version"
