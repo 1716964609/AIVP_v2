@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m9-hardening-gc-completion",
+  "state_updated_for": "m10-evidence-freeze-and-claim-matrix",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,10 +11,10 @@
   "current": {
     "milestone": "M10",
     "name": "Evidence / Publication",
-    "phase": "preparation",
-    "branch": "m9-hardening-gc",
+    "phase": "implementation",
+    "branch": "m10-evidence-publication",
     "base_tag": "m9-hardening-gc-complete",
-    "active_plan": null
+    "active_plan": "docs/exec-plans/active/M10-evidence-publication.md"
   },
   "completed_milestones": {
     "M0": {
@@ -97,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Create the M9 completion metadata commit and m9-hardening-gc-complete tag, then begin M10 Evidence / Publication planning from that frozen boundary.",
+  "next_action": "Review and commit M10-1 evidence freeze and Claim-Evidence Matrix, then build the public README from the frozen publication claims.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
