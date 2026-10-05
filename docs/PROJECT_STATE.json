@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m10-deterministic-demo-and-adrs",
+  "state_updated_for": "m10-internal-publication-exit-gate",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M10",
     "name": "Evidence / Publication",
-    "phase": "implementation",
+    "phase": "external-publication",
     "branch": "m10-evidence-publication",
     "base_tag": "m9-hardening-gc-complete",
     "active_plan": "docs/exec-plans/active/M10-evidence-publication.md"
@@ -97,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit the deterministic one-command demo and ADR-001 through ADR-010, then perform the final M10 exit-gate reconciliation. External publication items remain GitHub, Note, and Qiita.",
+  "next_action": "Publish the verified repository externally, prepare/publish the Note Why/Insight article and Qiita How/Implementation article, then record the external publication references before final M10 closure/tag.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
@@ -232,5 +232,16 @@
       "cleanup is idempotent"
     ],
     "live_model_calls_required": false
+  },
+  "m10_internal_exit": {
+    "status": "PASS",
+    "verified_commit": "c7cf072",
+    "unit_tests_pass": 415,
+    "deterministic_demo": "PASS",
+    "benchmark_validation": "PASS",
+    "secret_path_scan": "PASS",
+    "adr_count": 10,
+    "usd_cost_per_accepted_change": "UNAVAILABLE",
+    "external_publication": "PENDING"
   }
 }
