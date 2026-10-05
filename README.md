@@ -628,12 +628,62 @@ docs/EVALS.md
 
 ## Project Status
 
-M0からM9までは完了しています。
+**AIVP v2 — M0 through M10 complete.**
 
-現在は、
+AIVP v2 は、Probabilistic Coding Agent を Software Engineering の既存原則の中で制御するための、Local-first / Single-user の **production-minded Harness prototype** です。
 
-**M10 — Evidence / Publication**
+M0からM10までの実装、Fixed Evaluation、Benchmark、Security Boundary、Reproducibility、Evidence Publicationは完了しています。
 
-を実行中です。
+正式なM10 frozen baseline:
 
-README、Architecture、Technical Report、Benchmark、Security、Evaluation、Clean-clone Reproducibility、Publication HygieneのExit Gateを通過した後に、AIVP v2.0のFinal BoundaryをFreezeします。
+`m10-evidence-publication-complete`
+
+`main`には上記milestone tag以降のdocumentation-only refinementが存在する場合があります。M10の技術的Evidence Boundaryはこのtagに固定されています。
+
+### Published Work
+
+- **GitHub — Source / Architecture / Evidence:** https://github.com/1716964609/AIVP_v2
+- **Note — Why / Insight:** https://note.com/sunlightjetrans/n/n158b0ae48aa7
+- **Qiita — How / Implementation:** https://qiita.com/1716964609/items/8b73f7f36c33819eddc1
+- **Medium — Engineering Thesis:** https://medium.com/@hxlj9909/engineering-around-probabilistic-workers-f8b31aa6d56f
+
+### Key Evidence
+
+| Evidence | Observed result |
+| --- | ---: |
+| Fixed evaluation | **15 / 15 PASS** |
+| Total model calls | **78 → 72 (-7.69%)** |
+| Claude calls | **31 → 25 (-19.35%)** |
+| Controlled provider input | **413,779 → 110,790 (-73.22%)** |
+| Local context-cache median | **133.203 ms → 8.242 ms (16.162x)** |
+| Regression suite | **415 tests PASS** |
+
+Risk Routing comparisonではFixed Evaluationの15/15を維持しました。
+
+Wall-time差分は観測値として報告しており、その全量をRouting単独の因果効果とは主張しません。
+
+`USD Cost per Accepted Change = UNAVAILABLE`
+
+Provider Billing Evidenceが十分ではなかったため、USD値を推定で補完していません。
+
+### Evidence Documents
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Technical Report](docs/TECHNICAL_REPORT.md)
+- [Benchmark Report](docs/BENCHMARK.md)
+- [Security](docs/SECURITY.md)
+- [Evaluation](docs/EVALS.md)
+- [Architecture Decisions](docs/adr/README.md)
+- [M10 Claim / Evidence Matrix](docs/evidence/M10_CLAIM_EVIDENCE_MATRIX.md)
+- [M10 Publication Hygiene](docs/evidence/M10_PUBLICATION_HYGIENE.md)
+- [M10 Internal Exit Gate](docs/evidence/M10_EXIT_GATE.md)
+- [M10 Final Closure](docs/evidence/M10_FINAL_CLOSURE.md)
+
+### Explicit Non-Claims
+
+AIVP v2 does **not** claim:
+
+- production-ready multi-tenant operation
+- completed zero-trust security
+- general performance across arbitrary repositories or workloads
+- proven USD provider-cost reduction
