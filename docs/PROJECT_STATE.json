@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m9-planning",
+  "state_updated_for": "m9-implementation",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,7 +11,7 @@
   "current": {
     "milestone": "M9",
     "name": "Hardening / Garbage Collection",
-    "phase": "planning",
+    "phase": "implementation",
     "branch": "m9-hardening-gc",
     "base_tag": "m8-risk-routing-economics-complete",
     "active_plan": "docs/exec-plans/active/M9-hardening-garbage-collection.md"
@@ -93,7 +93,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Implement M9 from the active execution plan, beginning with ownership/classification and deterministic GC boundary tests.",
+  "next_action": "Implement and validate M9-1 ownership/classification before connecting destructive garbage-collection behavior.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",

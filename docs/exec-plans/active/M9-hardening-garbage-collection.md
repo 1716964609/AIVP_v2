@@ -1,6 +1,6 @@
 # M9 — Hardening / Garbage Collection
 
-Status: PLANNING
+Status: IN PROGRESS
 Base: b86a17cd5596141f52355bff6fd52d0c53cef9b0
 M8 completion tag: m8-risk-routing-economics-complete
 Branch: m9-hardening-gc
