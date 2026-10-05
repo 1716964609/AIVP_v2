@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m10-internal-publication-exit-gate",
+  "state_updated_for": "m10-final-closure",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -11,10 +11,11 @@
   "current": {
     "milestone": "M10",
     "name": "Evidence / Publication",
-    "phase": "external-publication",
+    "phase": "complete",
     "branch": "m10-evidence-publication",
     "base_tag": "m9-hardening-gc-complete",
-    "active_plan": "docs/exec-plans/active/M10-evidence-publication.md"
+    "active_plan": "docs/exec-plans/active/M10-evidence-publication.md",
+    "status": "COMPLETE"
   },
   "completed_milestones": {
     "M0": {
@@ -97,7 +98,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Publish the verified repository externally, prepare/publish the Note Why/Insight article and Qiita How/Implementation article, then record the external publication references before final M10 closure/tag.",
+  "next_action": "M10 is complete. Preserve this repository/tag as the published AIVP v2 evidence baseline. Start future work under a separately scoped milestone or branch.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
@@ -243,5 +244,24 @@
     "adr_count": 10,
     "usd_cost_per_accepted_change": "UNAVAILABLE",
     "external_publication": "PENDING"
+  },
+  "m10_external_publication": {
+    "status": "COMPLETE",
+    "github": "https://github.com/1716964609/AIVP_v2",
+    "note": "https://note.com/sunlightjetrans/n/n158b0ae48aa7",
+    "qiita": "https://qiita.com/1716964609/items/8b73f7f36c33819eddc1",
+    "medium": "https://medium.com/@hxlj9909/engineering-around-probabilistic-workers-f8b31aa6d56f",
+    "required_deliverables": {
+      "public_github_repository": "PASS",
+      "note_why_insight": "PASS",
+      "qiita_how_implementation": "PASS"
+    },
+    "additional_publication": {
+      "medium_engineering_thesis": "PASS"
+    },
+    "repository_internal_exit": "PASS",
+    "public_main_before_final_closure": "22906def99a8ac3f98d7cf29e6a364625883972e",
+    "closure_tag": "m10-evidence-publication-complete",
+    "usd_cost_per_accepted_change": "UNAVAILABLE"
   }
 }
