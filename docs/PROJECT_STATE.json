@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m10-evidence-freeze-and-claim-matrix",
+  "state_updated_for": "m10-public-readme",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -97,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit M10-1 evidence freeze and Claim-Evidence Matrix, then build the public README from the frozen publication claims.",
+  "next_action": "Review and commit the M10 public README, then build docs/ARCHITECTURE.md from the as-built Harness Panel implementation and frozen evidence.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
