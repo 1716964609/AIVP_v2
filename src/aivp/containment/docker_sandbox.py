@@ -9,6 +9,12 @@ from typing import Sequence
 from aivp.errors import AIVPError
 
 
+AIVP_DOCKER_OWNER_LABEL = "io.aivp.owner"
+AIVP_DOCKER_OWNER_VALUE = "aivp-v2"
+AIVP_DOCKER_RESOURCE_LABEL = "io.aivp.resource"
+AIVP_DOCKER_RESOURCE_VALUE = "sandbox"
+
+
 @dataclass(frozen=True)
 class DockerSandboxPolicy:
     image: str
@@ -82,6 +88,16 @@ class DockerSandbox:
             "run",
             "--rm",
             "--pull=never",
+            "--label",
+            (
+                f"{AIVP_DOCKER_OWNER_LABEL}="
+                f"{AIVP_DOCKER_OWNER_VALUE}"
+            ),
+            "--label",
+            (
+                f"{AIVP_DOCKER_RESOURCE_LABEL}="
+                f"{AIVP_DOCKER_RESOURCE_VALUE}"
+            ),
             "--network",
             "none",
             "--cap-drop",
