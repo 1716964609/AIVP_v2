@@ -16,6 +16,12 @@ from aivp.eval.suite import (
     load_eval_suite,
     run_eval_suite,
 )
+from aivp.maintenance.gc_command import (
+    format_gc_report_item,
+    gc_report_has_errors,
+    parse_duration_seconds,
+    run_gc,
+)
 from aivp.structured import load_structured
 
 
@@ -152,6 +158,64 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "required for real eval runs"
+        ),
+    )
+
+    gc_parser = (
+        subparsers.add_parser(
+            "gc",
+            help=(
+                "plan or execute bounded "
+                "AIVP garbage collection"
+            ),
+        )
+    )
+
+    gc_parser.add_argument(
+        "--older-than",
+        required=True,
+        type=parse_duration_seconds,
+        dest="older_than",
+        help=(
+            "retention cutoff, for example "
+            "7d, 12h, or 30m"
+        ),
+    )
+
+    gc_parser.add_argument(
+        "--reports",
+        type=Path,
+        default=Path("./reports"),
+    )
+
+    gc_parser.add_argument(
+        "--state-db",
+        type=Path,
+        default=Path(
+            "./.aivp/state.db"
+        ),
+    )
+
+    gc_parser.add_argument(
+        "--cache-root",
+        type=Path,
+        default=None,
+    )
+
+    gc_parser.add_argument(
+        "--project-state",
+        type=Path,
+        default=Path(
+            "./docs/PROJECT_STATE.json"
+        ),
+    )
+
+    gc_parser.add_argument(
+        "--yes",
+        action="store_true",
+        help=(
+            "execute destructive cleanup; "
+            "without this flag gc is dry-run"
         ),
     )
 
@@ -302,6 +366,59 @@ def main(
 
             parser.error(
                 "unknown eval command"
+            )
+
+        if args.command == "gc":
+            items = run_gc(
+                older_than_seconds=(
+                    args.older_than
+                ),
+                reports_root=(
+                    args.reports
+                ),
+                state_db=(
+                    args.state_db
+                ),
+                project_state=(
+                    args.project_state
+                ),
+                cache_root=(
+                    args.cache_root
+                ),
+                dry_run=(
+                    not args.yes
+                ),
+            )
+
+            print(
+                "RESOURCE\t"
+                "CLASSIFICATION\t"
+                "ACTION\t"
+                "REASON"
+            )
+
+            for item in items:
+                print(
+                    format_gc_report_item(
+                        item
+                    )
+                )
+
+            print(
+                "GC_MODE="
+                + (
+                    "APPLY"
+                    if args.yes
+                    else "DRY_RUN"
+                )
+            )
+
+            return (
+                1
+                if gc_report_has_errors(
+                    items
+                )
+                else 0
             )
 
         if args.command == "resume":
