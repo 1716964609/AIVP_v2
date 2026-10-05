@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m9-gc-cli-integration",
+  "state_updated_for": "m9-hardening-gc-exit-gate",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -93,7 +93,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit M9-6 dry-run-first aivp gc CLI integration; then execute M9-7 interruption and host-garbage exit-gate proof without live model calls.",
+  "next_action": "Review and commit M9-7 exit-gate evidence; then reconcile M9 completion metadata and create the M9 completion tag before starting M10 evidence/publication work.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
