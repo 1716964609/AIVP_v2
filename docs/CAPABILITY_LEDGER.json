@@ -431,6 +431,24 @@
         "Dollar Cost per Accepted Change is therefore unavailable.",
         "M8-1 safe terminal-HIGH routing produced no measured Codex-call reduction in the formal corpus."
       ]
+    },
+    {
+      "name": "hardening_and_garbage_collection",
+      "status": "proven",
+      "evidence": [
+        "docs/evidence/M9_GC_EXIT_GATE.md",
+        "fff46f5 Prove M9 garbage collection exit gate",
+        "415 unit tests PASS",
+        "8 M9 fault / exit-gate tests PASS",
+        "expired AIVP-owned terminal payloads removable",
+        "resumable interrupted runs preserved",
+        "formal evidence preserved",
+        "dirty worktrees preserved",
+        "ownership-unknown resources preserved",
+        "repeated cleanup idempotent",
+        "default aivp gc mode is dry-run",
+        "destructive cleanup requires --yes"
+      ]
     }
   ]
 }

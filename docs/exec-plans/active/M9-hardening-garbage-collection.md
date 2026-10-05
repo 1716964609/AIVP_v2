@@ -1,6 +1,6 @@
 # M9 — Hardening / Garbage Collection
 
-Status: IN PROGRESS
+Status: COMPLETE
 Base: b86a17cd5596141f52355bff6fd52d0c53cef9b0
 M8 completion tag: m8-risk-routing-economics-complete
 Branch: m9-hardening-gc
@@ -213,3 +213,29 @@ explicit GC without:
 - damaging protected benchmark evidence
 
 and repeated GC does not accumulate additional garbage.
+
+## Completion Record
+
+M9 implementation exit gate completed at commit `fff46f5`.
+
+Evidence:
+
+- `docs/evidence/M9_GC_EXIT_GATE.md`
+- M9 fault / exit-gate suite: 8 tests PASS
+- full unit regression: 415 tests PASS
+- dry-run is the default `aivp gc` mode
+- destructive cleanup requires explicit `--yes`
+- dirty worktrees are preserved
+- resumable interrupted runs are preserved
+- formal benchmark evidence is preserved
+- ownership-unknown resources fail closed to preservation
+- repeated cleanup is idempotent
+- no live model calls were required for M9 proof
+
+Completion tag:
+
+`m9-hardening-gc-complete`
+
+Next milestone:
+
+M10 — Evidence / Publication.

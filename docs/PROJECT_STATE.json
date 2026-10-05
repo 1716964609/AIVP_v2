@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m9-hardening-gc-exit-gate",
+  "state_updated_for": "m9-hardening-gc-completion",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -9,12 +9,12 @@
     "historical": "docs/milestones, docs/decisions, and archived historical material"
   },
   "current": {
-    "milestone": "M9",
-    "name": "Hardening / Garbage Collection",
-    "phase": "implementation",
+    "milestone": "M10",
+    "name": "Evidence / Publication",
+    "phase": "preparation",
     "branch": "m9-hardening-gc",
-    "base_tag": "m8-risk-routing-economics-complete",
-    "active_plan": "docs/exec-plans/active/M9-hardening-garbage-collection.md"
+    "base_tag": "m9-hardening-gc-complete",
+    "active_plan": null
   },
   "completed_milestones": {
     "M0": {
@@ -52,6 +52,10 @@
     "M8": {
       "commit": "23404dc937d84b16a68704f00161f89a7179fe27",
       "tag": "m8-risk-routing-economics-complete"
+    },
+    "M9": {
+      "commit": "fff46f5",
+      "tag": "m9-hardening-gc-complete"
     }
   },
   "m7_exit_gate": [
@@ -93,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit M9-7 exit-gate evidence; then reconcile M9 completion metadata and create the M9 completion tag before starting M10 evidence/publication work.",
+  "next_action": "Create the M9 completion metadata commit and m9-hardening-gc-complete tag, then begin M10 Evidence / Publication planning from that frozen boundary.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
@@ -194,5 +198,39 @@
     "git_diff_check": "PASS",
     "live_provider_usd_cost": "UNAVAILABLE",
     "cost_per_accepted_change_usd": "UNAVAILABLE"
+  },
+  "m9_completion": {
+    "implementation_commit": "fff46f5",
+    "branch": "m9-hardening-gc",
+    "completion_tag": "m9-hardening-gc-complete",
+    "exit_gate_evidence": "docs/evidence/M9_GC_EXIT_GATE.md",
+    "unit_tests": {
+      "count": 415,
+      "result": "PASS"
+    },
+    "fault_exit_gate_tests": {
+      "count": 8,
+      "result": "PASS"
+    },
+    "capabilities": [
+      "bounded worktree cleanup",
+      "bounded Docker cleanup",
+      "cache garbage collection",
+      "artifact retention planning",
+      "artifact retention execution",
+      "dry-run-first gc CLI",
+      "interruption and host-garbage exit-gate proof"
+    ],
+    "safety_invariants": [
+      "default GC mode is dry-run",
+      "destructive GC requires --yes",
+      "dirty worktrees are never force-removed",
+      "unknown ownership is preserved",
+      "resumable runs are preserved",
+      "formal benchmark evidence is preserved",
+      "historical SQLite provenance is retained",
+      "cleanup is idempotent"
+    ],
+    "live_model_calls_required": false
   }
 }
