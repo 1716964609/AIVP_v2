@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m10-technical-report",
+  "state_updated_for": "m10-benchmark-report",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -97,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit docs/TECHNICAL_REPORT.md, then build docs/BENCHMARK.md from frozen M5-M8 measurement evidence without rerunning live providers.",
+  "next_action": "Review and commit docs/BENCHMARK.md, then build docs/SECURITY.md and docs/EVALS.md from the proven containment, policy, fault-test, and fixed-evaluation boundaries.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
