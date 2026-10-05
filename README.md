@@ -288,6 +288,54 @@ Package metadataとCLI entry pointは、
 
 です。
 
+## One-command Deterministic Demo
+
+Live Codex / Claude Providerを呼ばず、AIVPのControl Loopを一度通すDeterministic Demoを用意しています。
+
+```bash
+make doctor
+make demo
+```
+
+`make demo`は既存のscripted Codex / scripted Claude fixtureを利用し、
+
+```text
+Generate
+  ↓
+Controlled Verification Failure
+  ↓
+Bounded Repair
+  ↓
+Re-verification
+  ↓
+Terminal Decision
+```
+
+を実行します。
+
+Demo用Runtime Artifactは`.aivp/`配下へ保存され、Git管理対象には入りません。
+
+追加の公開用Command:
+
+```bash
+make test
+make benchmark
+```
+
+`make benchmark`はFrozen Benchmark Evidenceを検証するだけで、Live Benchmarkを再実行しません。
+
+Full M7 Evaluationも、
+
+```bash
+make eval
+```
+
+で起動できますが、これは一部CaseでLive Codex / Claude Providerを使用する可能性があり、Provider Quotaを消費します。
+
+Architecture Decision Records:
+
+- [`docs/adr/README.md`](docs/adr/README.md)
+
 ## CLI
 
 現在のPublic CLI Surfaceは次の4系統です。

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AIVP_v2",
-  "state_updated_for": "m10-reproducibility-publication-hygiene",
+  "state_updated_for": "m10-deterministic-demo-and-adrs",
   "source_of_truth": {
     "normative": "AIVP_v2_Master_Implementation_Plan.pdf",
     "as_built": "Git repository, source code, history, branches, and tags",
@@ -97,7 +97,7 @@
     "M1-M4 milestone-boundary test counts if separately preserved",
     "M2-M4 milestone-specific exit-evidence artifact paths if separately preserved"
   ],
-  "next_action": "Review and commit the M10-7 reproducibility/publication-hygiene boundary, then reconcile the remaining M10 publication package and final exit gate against the Master Implementation Plan.",
+  "next_action": "Review and commit the deterministic one-command demo and ADR-001 through ADR-010, then perform the final M10 exit-gate reconciliation. External publication items remain GitHub, Note, and Qiita.",
   "repository_memory": {
     "implementation_base_commit": "23404dc937d84b16a68704f00161f89a7179fe27",
     "implementation_base_tag": "m8-risk-routing-economics-complete",
